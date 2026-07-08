@@ -5,6 +5,78 @@
     "bun install",
     "bun run dev",
   ].join("\n");
+  const serverCode = [
+    'import { serve } from "crumbun";',
+    "",
+    'const server = await serve({ root: ".." });',
+    'console.log(`Crumbun running at http://${server.hostname}:${server.port}`);',
+  ].join("\n");
+  const routesCode = [
+    '// src/api/story/[id]/page.ts',
+    'import type { PageContext } from "crumbun";',
+    "",
+    "export function GET({ params, render }: PageContext) {",
+    '  return render("story/story", { title: `Story ${params.id}` });',
+    "}",
+  ].join("\n");
+  const groupsCode = [
+    "// (group) folders are dropped from the URL",
+    "src/api/(marketing)/about/page.ts  ->  /about",
+    "src/api/blog/(v2)/[slug]/page.ts  ->  /blog/:slug",
+  ].join("\n");
+  const viewsCode = [
+    '// src/api/story/[id]/page.ts',
+    'export function GET({ render }: PageContext) {',
+    '  return render("story/story", { title: "Hi" });',
+    "}",
+    "",
+    "// src/views/story/story.pug",
+    "h1= title",
+  ].join("\n");
+  const layoutCode = [
+    "// src/views/_layout.pug  (wraps every view)",
+    "doctype html",
+    "html(lang=\"en\")",
+    "  body",
+    "    != content",
+    "",
+    "// src/views/index.pug  (no extends needed)",
+    "h1 Home",
+  ].join("\n");
+  const errorCode = [
+    "// src/views/_error.pug  (status + message locals)",
+    'p.error= message + " (" + status + ")"',
+  ].join("\n");
+  const cookiesCode = [
+    'export function POST({ cookies, json }: PageContext) {',
+    '  cookies.set("session", "abc", { httpOnly: true });',
+    '  return json({ ok: true });',
+    "}",
+  ].join("\n");
+  const redirectCode = [
+    "export function GET({ request, redirect }: PageContext) {",
+    '  if (!request.headers.get("authorization")) return redirect("/login", 307);',
+    '  return redirect("/dashboard");',
+    "}",
+  ].join("\n");
+  const envCode = [
+    'import { env } from "crumbun";',
+    "",
+    'const port = env("PORT", "3000");',
+    'const token = env("API_TOKEN");',
+  ].join("\n");
+  const spaCode = [
+    'import { serve } from "crumbun";',
+    "",
+    '// unknown GETs render the root view for client routing',
+    'await serve({ root: "..", spa: true });',
+  ].join("\n");
+  const cacheCode = [
+    "// public files + /_crumbun CSS get:",
+    "//   Cache-Control: public, max-age=3600",
+    '//   ETag: "<size>-<mtime>"',
+    "//   If-None-Match -> 304",
+  ].join("\n");
   const staticCode = [
     'import { fileURLToPath } from "node:url";',
     'import { exportStatic } from "crumbun";',
@@ -23,6 +95,16 @@
     "  });",
     "}",
   ].join("\n");
+  const contextRef = [
+    ["request", "incoming Request"],
+    ["params", "route params from [brackets]"],
+    ["url", "parsed URL"],
+    ["render(view, locals?, init?)", "render src/views/<view>.pug"],
+    ["json(value, init?)", "JSON response"],
+    ["redirect(path, status?)", "302 (or status) redirect"],
+    ["cookies", "get / set / delete / all"],
+    ["highlightCode(src, lang)", "escaped, classed HTML"],
+  ];
 
 doctype html
 html(lang="en")
@@ -47,16 +129,23 @@ html(lang="en")
       button.active(type="button" data-tab="start") Start
       button(type="button" data-tab="routes") Routes
       button(type="button" data-tab="views") Views
+      button(type="button" data-tab="layout") Layout
+      button(type="button" data-tab="errors") Errors
+      button(type="button" data-tab="data") Data
+      button(type="button" data-tab="advanced") Advanced
       button(type="button" data-tab="static") Static
       button(type="button" data-tab="handler") Handler
 
     main
       section.panel.active(data-panel="start")
         h2 Start
-        p.hint Create a crumbun app, install packages, run Bun. The generated server is one file.
+        p.hint Scaffold an app, install, and run. One command creates the server, routes, and views.
         label Command
         pre
           code.language-sh!= highlightCode(startCode, "sh")
+        label Server
+        pre
+          code.language-ts!= highlightCode(serverCode, "ts")
         div.out
           div.row
             span.rank 01
@@ -73,16 +162,13 @@ html(lang="en")
 
       section.panel(data-panel="routes")
         h2 Routes
-        p.hint `src/api/**/page.ts` creates routes. Bracket folders become URL params.
-        div.grid2
-          div
-            label File
-            pre
-              code.language-text!= highlightCode("src/api/story/[id]/page.ts")
-          div
-            label Route
-            pre
-              code.language-text!= highlightCode("/story/:id")
+        p.hint `src/api/**/page.ts` creates routes. Bracket folders become URL params. Parenthesised folders are route groups (dropped from the URL).
+        label src/api/story/[id]/page.ts
+        pre
+          code.language-ts!= highlightCode(routesCode, "ts")
+        label Route groups
+        pre
+          code.language-text!= highlightCode(groupsCode, "text")
         div.out
           div.row
             span.rank GET
@@ -93,17 +179,20 @@ html(lang="en")
             span.lbl export any HTTP method
             code POST({ request })
           div.row
+            span.rank (grp)
+            span.lbl pathless folder
+            code (marketing)/about
+          div.row
             span.rank root
-            span.lbl no matching route renders
+            span.lbl no match renders index
             code src/views/index.pug
-        img.preview(src="crumbun-board.png" alt="crumbun route and view diagram")
 
       section.panel(data-panel="views")
         h2 Views
-        p.hint Pug files live in `src/views`. CSS next to views is served from `/_crumbun`.
-        label View tree
+        p.hint Pug files live in `src/views`. `render("story/story")` renders `src/views/story/story.pug`. View CSS is served from `/_crumbun`.
+        label Render a view
         pre
-          code.language-text!= highlightCode("src/views/\n  layout/\n    layout.pug\n    layout.css\n  story/\n    story.pug\n    story.css\n  index.pug\n  style.css")
+          code.language-ts!= highlightCode(viewsCode, "ts")
         div.out
           div.row
             span.rank pug
@@ -117,6 +206,105 @@ html(lang="en")
             span.rank pub
             span.lbl public assets
             code /favicon.svg
+          div.row
+            span.rank hl
+            span.lbl code highlighting
+            code highlightCode(src, "ts")
+
+      section.panel(data-panel="layout")
+        h2 Layout
+        p.hint Create `src/views/_layout.pug` to wrap every view. The engine injects the view as `content`; emit it with `!= content`. Views that already `extends` are left alone.
+        label src/views/_layout.pug
+        pre
+          code.language-text!= highlightCode(layoutCode, "text")
+        div.out
+          div.row
+            span.rank wrap
+            span.lbl every rendered view
+            code _layout.pug
+          div.row
+            span.rank skip
+            span.lbl opt out per view
+            code render(v, { layout: false })
+          div.row
+            span.rank inject
+            span.lbl position the view
+            code != content
+
+      section.panel(data-panel="errors")
+        h2 Errors
+        p.hint Create `src/views/_error.pug` to render 404 and other errors. It receives `status` and `message` locals. Without it, crumbun returns plain text.
+        label src/views/_error.pug
+        pre
+          code.language-text!= highlightCode(errorCode, "text")
+        div.out
+          div.row
+            span.rank 404
+            span.lbl missing route
+            code _error.pug
+          div.row
+            span.rank 405
+            span.lbl method not allowed
+            code Allow header
+          div.row
+            span.rank msg
+            span.lbl locals passed in
+            code status, message
+
+      section.panel(data-panel="data")
+        h2 Data
+        p.hint Handlers get `cookies`, `redirect`, and the `env` helper for the common request/response plumbing.
+        div.grid2
+          div
+            label Cookies
+            pre
+              code.language-ts!= highlightCode(cookiesCode, "ts")
+          div
+            label Redirect
+            pre
+              code.language-ts!= highlightCode(redirectCode, "ts")
+        label Environment
+        pre
+          code.language-ts!= highlightCode(envCode, "ts")
+        div.out
+          div.row
+            span.rank get
+            span.lbl read incoming cookie
+            code cookies.get(name)
+          div.row
+            span.rank set
+            span.lbl attach to response
+            code cookies.set(name, val, opts)
+          div.row
+            span.rank env
+            span.lbl Bun.env with fallback
+            code env("PORT", "3000")
+
+      section.panel(data-panel="advanced")
+        h2 Advanced
+        p.hint SPA fallback and asset caching harden real apps without extra dependencies. Both are opt-in.
+        div.grid2
+          div
+            label SPA fallback
+            pre
+              code.language-ts!= highlightCode(spaCode, "ts")
+          div
+            label Asset caching
+            pre
+              code.language-text!= highlightCode(cacheCode, "text")
+        div.out
+          div.row
+            span.rank spa
+            span.lbl unknown GET -> index
+            code serve({ spa: true })
+          div.row
+            span.rank etag
+            span.lbl 304 on match
+            code If-None-Match
+          div.row
+            span.rank cache
+            span.lbl public assets
+            code max-age=3600
 
       section.panel(data-panel="static")
         h2 Static
@@ -145,22 +333,11 @@ html(lang="en")
         pre
           code.language-ts!= highlightCode(handlerCode, "ts")
         div.out
-          div.row
-            span.rank req
-            span.lbl incoming request
-            code request
-          div.row
-            span.rank url
-            span.lbl parsed URL
-            code url
-          div.row
-            span.rank data
-            span.lbl return JSON
-            code json(value)
-          div.row
-            span.rank 204
-            span.lbl return empty response
-            code null
+          each pair in contextRef
+            div.row
+              span.rank ctx
+              span.lbl= pair[1]
+              code= pair[0]
 
     script.
       document.querySelectorAll("#tabs button").forEach((button) => {
