@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
 import { mkdir, readdir, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 const target = resolve(Bun.argv[2] ?? "app");
 const appName = packageName(basename(target));
-const fstugDependency = `file:${relative(target, resolve(import.meta.dir, "../../fstug")).replaceAll("\\", "/")}`;
+const fstugDependency = "^0.1.0";
 
 if (await isNonEmptyDir(target)) {
   console.error(`Refusing to overwrite non-empty directory: ${target}`);

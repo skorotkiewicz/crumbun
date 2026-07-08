@@ -1,8 +1,30 @@
 {
   "name": "create-fstug",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Create a tiny Bun fullstack app using fstug and Pug.",
   "type": "module",
   "bin": {
-    "create-fstug": "./src/index.ts"
+    "create-fstug": "src/index.ts"
+  },
+  "files": [
+    "src/index.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "pack:check": "npm pack --dry-run --json"
+  },
+  "keywords": [
+    "bun",
+    "pug",
+    "starter",
+    "scaffold",
+    "fstug"
+  ],
+  "license": "UNLICENSED",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
