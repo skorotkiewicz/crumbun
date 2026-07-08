@@ -1,106 +1,172 @@
+# Agent Instructions
 
-Default to using Bun instead of Node.js.
+## Project Context
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+crumbun is a tiny Bun fullstack engine with file routes and Pug templates.
 
-## APIs
+Workspace packages:
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+- `packages/crumbun`: runtime engine published as `crumbun`.
+- `packages/create-crumbun`: scaffold CLI published as `create-crumbun`.
 
-## Testing
+The engine is intentionally small. Prefer direct Bun APIs, Pug, Web `Request`/`Response`, and simple file conventions over framework layers.
 
-Use `bun test` to run tests.
+## Use Bun
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+- Use `bun <file>` instead of `node <file>` or `ts-node <file>`.
+- Use `bun test` for tests.
+- Use `bun install` for dependency changes.
+- Use `bun run <script>` for package scripts.
+- Use `bunx <package>` instead of `npx`.
+- Do not add Express, Vite, webpack, dotenv, Jest, or Vitest unless the user explicitly asks.
 
-test("hello world", () => {
-  expect(1).toBe(1);
+## Common Commands
+
+- Install: `bun install`
+- Test all packages: `bun run check`
+- Test engine only: `cd packages/crumbun && bun test`
+- Scaffold locally: `bun run create my-app`
+- Check engine package: `cd packages/crumbun && npm pack --dry-run`
+- Check CLI package: `cd packages/create-crumbun && npm pack --dry-run`
+
+## How crumbun Apps Work
+
+Minimal server:
+
+```ts
+import { fileURLToPath } from "node:url";
+import { serve } from "crumbun";
+
+const server = await serve({
+  root: fileURLToPath(new URL("..", import.meta.url)),
 });
+
+console.log(`Crumbun running at http://${server.hostname}:${server.port}`);
 ```
 
-## Frontend
+Expected app shape:
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
+```txt
+public/
+  favicon.svg
+src/
+  api/
+    story/
+      [id]/
+        page.ts
+        getstory.ts
+  views/
+    layout/
+      layout.pug
+      layout.css
+    story/
+      story.pug
+      story.css
+    index.pug
+    style.css
 ```
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+Routing rules:
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
+- `src/api/**/page.ts` creates routes.
+- Folder names in brackets become params: `[id]` maps to `params.id`.
+- `src/api/story/[id]/page.ts` handles `/story/:id`.
+- Page files may export HTTP method handlers such as `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD`.
+- A `default` export can be used as the fallback handler.
+- Root `GET /` renders `src/views/index.pug` when no page route matches.
 
-With the following `frontend.tsx`:
+Page handler example:
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
+```ts
+import type { PageContext } from "crumbun";
 
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
+export async function GET({ params, render }: PageContext) {
+  return render("story/story", {
+    title: `Story ${params.id}`,
+  });
 }
-
-root.render(<Frontend />);
 ```
 
-Then, run index.ts
+Handler context:
 
-```sh
-bun --hot ./index.ts
+- `request`: incoming `Request`.
+- `url`: parsed `URL`.
+- `params`: route params from bracket folders.
+- `render(view, locals?, init?)`: renders `src/views/<view>.pug`.
+- `json(value, init?)`: returns JSON with the correct content type.
+
+Response rules:
+
+- Return a `Response` for full control.
+- Return a string for HTML.
+- Return an object for JSON.
+- Return `null` or `undefined` for `204`.
+
+Views and assets:
+
+- Pug views live under `src/views`.
+- `render("story/story")` renders `src/views/story/story.pug`.
+- Pug receives `basedir: src/views`.
+- Public static files live under `public` and are served from `/`.
+- CSS in `src/views` is served from `/_crumbun`.
+- `src/views/story/story.css` is available at `/_crumbun/story/story.css`.
+
+## Working On The Engine
+
+- Keep `packages/crumbun/src/index.ts` small and direct.
+- Use standard Web APIs and Bun APIs before adding dependencies.
+- Preserve safe path handling for public files and view CSS.
+- Add or update focused `bun:test` coverage for route matching, rendering behavior, and static file behavior.
+- If changing package names, update package metadata, README files, CLI templates, and `bun.lock`.
+
+## Working On The CLI
+
+- `packages/create-crumbun/src/index.ts` embeds the starter app as strings.
+- Generated apps should depend on `"crumbun": "^0.1.0"` unless deliberately preparing a local-only dev flow.
+- Keep the scaffold boring: `public`, `src/api`, `src/views`, and `src/utils`.
+- Verify CLI changes by scaffolding into `/tmp` and inspecting the generated `package.json` and imports.
+
+## Publishing
+
+Publish order matters:
+
+```bash
+cd packages/crumbun
+bun test
+npm pack --dry-run
+npm publish
+
+cd ../create-crumbun
+npm pack --dry-run
+npm publish
 ```
 
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+Do not publish, tag, or bump versions without explicit user approval.
+
+## Guardrails
+
+Always:
+
+- Read existing code before changing behavior.
+- Keep changes small and reviewable.
+- Use `rg` for search.
+- Report commands run and checks skipped.
+
+Ask first:
+
+- Installing new dependencies.
+- Renaming packages or public APIs.
+- Publishing to npm.
+- Starting long-running servers outside the sandbox.
+- Deleting files, generated apps, or lockfiles.
+
+Never:
+
+- Replace Bun with Node-oriented tooling.
+- Add a framework layer around `Bun.serve()` without a concrete need.
+- Commit, tag, publish, deploy, or run destructive git commands unless the user explicitly asks.
+- Mutate unrelated user changes.
+
+## Approval Boundary
+
+Do not edit files, install packages, run migrations, commit, deploy, publish, delete data, or perform other mutating work without explicit written approval.
