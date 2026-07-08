@@ -16,7 +16,7 @@ test("serves dynamic page modules", async () => {
   await mkdir(routeDir, { recursive: true });
   await writeFile(
     join(routeDir, "page.ts"),
-    'export function GET({ params }) { return new Response(`story:${params.id}`); }\n',
+    `export function GET({ params }) { return new Response(\`story:\${params.id}\`); }\n`,
   );
 
   const app = await createApp({ root });
@@ -59,7 +59,7 @@ test("exports static pages and assets", async () => {
   await writeFile(join(root, "src/views/style.css"), "body { color: red; }\n");
   await writeFile(
     join(root, "src/api/story/[id]/page.ts"),
-    'export function GET({ params }) { return `story:${params.id}`; }\n',
+    `export function GET({ params }) { return \`story:\${params.id}\`; }\n`,
   );
 
   const result = await exportStatic({ root, paths: ["/", "/story/abc"] });
