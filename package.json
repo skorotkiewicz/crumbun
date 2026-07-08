@@ -14,10 +14,12 @@
   ],
   "scripts": {
     "check": "bun test",
+    "lint": "biome lint .",
     "create": "bun packages/create-crumbun/src/index.ts",
     "site": "bun run --cwd site dev"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
     "@types/bun": "latest"
   }
 }
