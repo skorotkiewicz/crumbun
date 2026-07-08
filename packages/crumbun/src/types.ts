@@ -1,5 +1,7 @@
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] as const;
 
+import type { Cookies } from "./cookies";
+
 type HttpMethod = (typeof methods)[number];
 type PageResult = Response | string | Record<string, unknown> | undefined | null;
 
@@ -11,6 +13,8 @@ export type PageContext = {
   url: URL;
   render: (view: string, locals?: Record<string, unknown>, init?: ResponseInit) => Promise<Response>;
   json: (value: unknown, init?: ResponseInit) => Response;
+  redirect: (path: string, status?: number) => Response;
+  cookies: Cookies;
   highlightCode: (source: string, language?: string) => string;
 };
 
@@ -19,6 +23,7 @@ export type CrumbunOptions = {
   port?: number;
   hostname?: string;
   development?: boolean;
+  spa?: boolean;
 };
 
 export type StaticExportOptions = CrumbunOptions & {

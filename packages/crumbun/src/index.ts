@@ -11,6 +11,7 @@ import {
   viewAssetResponse,
 } from "./files";
 import { loadRoutes, matchPattern, routePatternFromPageFile } from "./routes";
+import { parseCookies, serializeCookie, type Cookies, type CookieOptions } from "./cookies";
 import { methods, type CrumbunOptions, type HttpMethod, type PageContext, type PageHandler, type PageResult, type StaticExportOptions, type StaticExportResult } from "./types";
 
 type CrumbunApp = {
@@ -29,8 +30,16 @@ export type {
   PageHandler,
   StaticExportOptions,
   StaticExportResult,
+  Cookies,
+  CookieOptions,
 };
 export { highlightCode, matchPattern, routePatternFromPageFile };
+
+export function env(key: string): string | undefined;
+export function env(key: string, fallback: string): string;
+export function env(key: string, fallback?: string): string | undefined {
+  return Bun.env[key] ?? fallback;
+}
 
 export async function serve(options: CrumbunOptions = {}) {
   const app = await createApp(options);
@@ -50,23 +59,63 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
   const viewsDir = resolve(srcDir, "views");
   const routes = await loadRoutes(apiDir, Boolean(options.development));
 
+  async function renderView(view: string, locals: Record<string, unknown>): Promise<string | null> {
+    const viewPath = safePath(viewsDir, view.endsWith(".pug") ? view : `${view}.pug`);
+    if (!viewPath || !(await Bun.file(viewPath).exists())) return null;
+    return pug.renderFile(viewPath, { ...locals, basedir: viewsDir, highlightCode });
+  }
+
+  async function hasLayout(view: string): Promise<boolean> {
+    const layoutPath = safePath(viewsDir, "_layout.pug");
+    if (!layoutPath || !(await Bun.file(layoutPath).exists())) return false;
+
+    const viewPath = safePath(viewsDir, view.endsWith(".pug") ? view : `${view}.pug`);
+    if (!viewPath) return true;
+    const source = await Bun.file(viewPath).text();
+    const firstMeaningful = source
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => line && !line.startsWith("//"));
+    return firstMeaningful ? !firstMeaningful.startsWith("extends") : true;
+  }
+
   async function render(
     view: string,
     locals: Record<string, unknown> = {},
     init: ResponseInit = {},
-  ) {
-    const viewPath = safePath(viewsDir, view.endsWith(".pug") ? view : `${view}.pug`);
+  ): Promise<Response> {
+    const inner = await renderView(view, locals);
+    if (inner == null) return new Response("View not found", { status: 404 });
 
-    if (!viewPath || !(await Bun.file(viewPath).exists())) {
-      return new Response("View not found", { status: 404 });
+    let html = inner;
+    const layoutOpt = locals.layout;
+    const layoutView =
+      layoutOpt === false ? null : typeof layoutOpt === "string" ? layoutOpt : (await hasLayout(view) ? "_layout" : null);
+
+    if (layoutView) {
+      const wrapped = await renderView(layoutView, { ...locals, content: inner });
+      if (wrapped != null) html = wrapped;
     }
 
     const headers = new Headers(init.headers);
     headers.set("content-type", "text/html; charset=utf-8");
+    return new Response(html, { ...init, headers });
+  }
 
-    return new Response(pug.renderFile(viewPath, { ...locals, basedir: viewsDir, highlightCode }), {
-      ...init,
-      headers,
+  async function errorResponse(
+    status: number,
+    message: string,
+    extra: Record<string, string> = {},
+  ): Promise<Response> {
+    const view = await renderView("_error", { status, message });
+    if (view != null) {
+      const headers = new Headers({ "content-type": "text/html; charset=utf-8" });
+      for (const [key, value] of Object.entries(extra)) headers.set(key, value);
+      return new Response(view, { status, headers });
+    }
+    return new Response(message, {
+      status,
+      headers: { ...extra, "content-type": "text/plain; charset=utf-8" },
     });
   }
 
@@ -74,7 +123,7 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
     const url = new URL(request.url);
 
     if (request.method === "GET" || request.method === "HEAD") {
-      const viewAsset = await viewAssetResponse(viewsDir, url.pathname);
+      const viewAsset = await viewAssetResponse(viewsDir, url.pathname, request);
       if (viewAsset) return viewAsset;
 
       if (url.pathname === "/_crumbun/highlight.css") {
@@ -84,7 +133,7 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
       }
 
       if (url.pathname !== "/") {
-        const publicFile = await fileResponse(publicDir, url.pathname);
+        const publicFile = await fileResponse(publicDir, url.pathname, request);
         if (publicFile) return publicFile;
       }
     }
@@ -97,11 +146,23 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
       const handler = route.module[method] ?? route.module.default;
 
       if (!handler) {
-        return new Response("Method not allowed", {
-          status: 405,
-          headers: { allow: allowedMethods(route.module).join(", ") },
+        return errorResponse(405, "Method not allowed", {
+          allow: allowedMethods(route.module).join(", "),
         });
       }
+
+      const parsed = parseCookies(request.headers.get("cookie") ?? "");
+      const pendingCookies: string[] = [];
+      const cookies: Cookies = {
+        get: (name) => parsed[name],
+        set: (name, value, opts) => {
+          pendingCookies.push(serializeCookie(name, value, opts));
+        },
+        delete: (name, opts) => {
+          pendingCookies.push(serializeCookie(name, "", { ...opts, maxAge: 0 }));
+        },
+        all: parsed,
+      };
 
       const context: PageContext = {
         request,
@@ -110,16 +171,20 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
         render,
         json,
         highlightCode,
+        redirect: (path, status = 302) => new Response(null, { status, headers: { location: path } }),
+        cookies,
       };
 
-      return toResponse(await handler(context));
+      const response = toResponse(await handler(context));
+      for (const cookie of pendingCookies) response.headers.append("Set-Cookie", cookie);
+      return response;
     }
 
-    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/") {
-      return render("index");
+    if (request.method === "GET" || request.method === "HEAD") {
+      if (url.pathname === "/" || options.spa) return render("index", { active: "start" });
     }
 
-    return new Response("Not found", { status: 404 });
+    return errorResponse(404, "Not found");
   }
 
   return { root, fetch };

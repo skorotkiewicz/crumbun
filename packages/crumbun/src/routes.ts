@@ -7,6 +7,7 @@ export function routePatternFromPageFile(apiDir: string, file: string) {
   const parts = relative(apiDir, dirname(file))
     .split(sep)
     .filter(Boolean)
+    .filter((part) => !(part.startsWith("(") && part.endsWith(")")))
     .map((part) => (part.startsWith("[") && part.endsWith("]") ? `:${part.slice(1, -1)}` : part));
 
   return `/${parts.join("/")}`;

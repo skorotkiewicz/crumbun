@@ -91,6 +91,8 @@ To export static HTML:
 - src/api/**/page.ts creates routes.
 - src/views/**/*.pug contains Pug views.
 - src/views/**/*.css is served from /_crumbun.
+- src/views/_layout.pug (optional) wraps every view; emit the view with != content.
+- src/views/_error.pug (optional) renders 404 and error responses with status and message locals.
 - src/utils/ is for local app helpers and data.
 
 ## Routing
@@ -107,6 +109,9 @@ Handler context:
 - params: route params from bracket folders.
 - render(view, locals, init): renders src/views/<view>.pug.
 - json(value, init): returns JSON with the right content type.
+- redirect(path, status = 302): returns a redirect Response.
+- cookies: parsed incoming cookies plus get/set/delete/all; set cookies attach to the response.
+- env(key, fallback?): reads Bun.env safely (Bun loads .env automatically).
 
 Return values:
 
@@ -114,6 +119,8 @@ Return values:
 - string for HTML.
 - object for JSON.
 - null or undefined for 204.
+
+Folder names in parentheses, such as src/api/(marketing)/about/page.ts, are route groups and do not appear in the URL (/about).
 
 ## Views
 

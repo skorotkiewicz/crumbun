@@ -17,21 +17,30 @@ export function safePath(root: string, pathname: string) {
   return path === root || path.startsWith(`${root}${sep}`) ? path : null;
 }
 
-export async function fileResponse(root: string, pathname: string) {
+export async function fileResponse(root: string, pathname: string, request?: Request) {
   const path = safePath(root, pathname);
   if (!path) return null;
 
   const file = Bun.file(path);
   if (!(await file.exists())) return null;
 
-  return new Response(file, {
-    headers: { "content-type": contentType(path) },
-  });
+  const headers = new Headers();
+  headers.set("content-type", contentType(path));
+
+  const etag = `"${file.size}-${file.lastModified}"`;
+  headers.set("etag", etag);
+  headers.set("cache-control", "public, max-age=3600");
+
+  if (request && request.headers.get("if-none-match") === etag) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  return new Response(file, { headers });
 }
 
-export async function viewAssetResponse(viewsDir: string, pathname: string) {
+export async function viewAssetResponse(viewsDir: string, pathname: string, request?: Request) {
   if (!pathname.startsWith("/_crumbun/") || !pathname.endsWith(".css")) return null;
-  return fileResponse(viewsDir, pathname.slice("/_crumbun/".length));
+  return fileResponse(viewsDir, pathname.slice("/_crumbun/".length), request);
 }
 
 export async function findFiles(dir: string, matches: (name: string) => boolean): Promise<string[]> {

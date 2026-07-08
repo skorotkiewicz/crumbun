@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { expect, test } from "bun:test";
-import { createApp, exportStatic, highlightCode, matchPattern, routePatternFromPageFile } from "./index";
+import { createApp, env, exportStatic, highlightCode, matchPattern, routePatternFromPageFile } from "./index";
 
 test("turns file routes into URL patterns", () => {
   expect(routePatternFromPageFile("/app/src/api", "/app/src/api/story/[id]/page.ts")).toBe("/story/:id");
@@ -108,3 +108,107 @@ test("exports static pages and assets", async () => {
   expect(await Bun.file(join(root, "dist/_crumbun/style.css")).text()).toBe("body { color: red; }\n");
   expect(await Bun.file(join(root, "dist/.nojekyll")).exists()).toBe(true);
 });
+
+test("ignores route groups in URLs", () => {
+  expect(routePatternFromPageFile("/app/src/api", "/app/src/api/(marketing)/about/page.ts")).toBe("/about");
+  expect(routePatternFromPageFile("/app/src/api", "/app/src/api/blog/(v2)/[slug]/page.ts")).toBe("/blog/:slug");
+});
+
+test("env reads Bun.env with fallback", () => {
+  Bun.env.CRUMBUN_TEST_VAR = "present";
+  expect(env("CRUMBUN_TEST_VAR")).toBe("present");
+  expect(env("CRUMBUN_MISSING_VAR", "fallback")).toBe("fallback");
+  expect(env("CRUMBUN_MISSING_VAR")).toBeUndefined();
+  delete Bun.env.CRUMBUN_TEST_VAR;
+});
+
+test("redirect returns a location response", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-redirect-"));
+  await mkdir(join(root, "src/api/go"), { recursive: true });
+  await writeFile(join(root, "src/api/go/page.ts"), 'export function GET({ redirect }) { return redirect("/done", 307); }\n');
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/go"));
+
+  expect(response.status).toBe(307);
+  expect(response.headers.get("location")).toBe("/done");
+});
+
+test("cookies parse incoming and set outgoing", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-cookies-"));
+  await mkdir(join(root, "src/api/whoami"), { recursive: true });
+  await writeFile(
+    join(root, "src/api/whoami/page.ts"),
+    'export function GET({ cookies, json }) { cookies.set("seen", "1"); return json({ had: cookies.get("token"), all: cookies.all }); }\n',
+  );
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/whoami", { headers: { cookie: "token=abc" } }));
+  const body = (await response.json()) as { had: string; all: Record<string, string> };
+
+  expect(body.had).toBe("abc");
+  expect(body.all.token).toBe("abc");
+  expect(response.headers.get("set-cookie")).toContain("seen=1");
+});
+
+test("renders custom error page when present", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-error-"));
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+  await writeFile(join(root, "src/views/_error.pug"), 'p.error= message + " (" + status + ")"\n');
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/missing"));
+
+  expect(response.status).toBe(404);
+  expect(await response.text()).toContain("Not found (404)");
+});
+
+test("wraps views in _layout.pug unless opted out", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-layout-"));
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), 'span.page content\n');
+  await writeFile(join(root, "src/views/_layout.pug"), 'body!= content\n');
+  await mkdir(join(root, "src/api/raw"), { recursive: true });
+  await writeFile(join(root, "src/api/raw/page.ts"), 'export function GET({ render }) { return render("bare", { layout: false }); }\n');
+  await writeFile(join(root, "src/views/bare.pug"), 'span.bare text\n');
+
+  const app = await createApp({ root });
+  const wrappedText = await (await app.fetch(new Request("http://crumbun.test/"))).text();
+  expect(wrappedText).toContain("<body>");
+  expect(wrappedText).toContain('<span class="page">');
+
+  const optedOutText = await (await app.fetch(new Request("http://crumbun.test/raw"))).text();
+  expect(optedOutText).toContain('<span class="bare">');
+  expect(optedOutText).not.toContain("<body>");
+});
+
+test("serves static assets with etag and 304", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-etag-"));
+  await mkdir(join(root, "public"), { recursive: true });
+  await writeFile(join(root, "public/hello.txt"), "hi");
+
+  const app = await createApp({ root });
+  const first = await app.fetch(new Request("http://crumbun.test/hello.txt"));
+  const etag = first.headers.get("etag") ?? "";
+
+  expect(first.status).toBe(200);
+  expect(first.headers.get("cache-control")).toContain("max-age");
+  expect(etag).not.toBe("");
+
+  const second = await app.fetch(new Request("http://crumbun.test/hello.txt", { headers: { "if-none-match": etag } }));
+  expect(second.status).toBe(304);
+});
+
+test("spa fallback renders index for unknown GETs", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-spa-"));
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 App\n");
+
+  const app = await createApp({ root, spa: true });
+  const response = await app.fetch(new Request("http://crumbun.test/dashboard"));
+
+  expect(response.status).toBe(200);
+  expect(await response.text()).toContain("App");
+});
+
