@@ -92,7 +92,8 @@ console.log(`Exported ${result.outDir}`);
 - `src/views/index.pug` renders `GET /` when no page route matches.
 - `render("story/story")` renders `src/views/story/story.pug`.
 - `public/` is served from `/`.
-- `src/views/**/*.css` and `src/views/**/*.scss` are served from `/_crumbun`.
+- `src/views/**/*.css` and `src/views/**/*.scss` are served from `/_crumbun` (SCSS is compiled on the fly).
+- A view's own stylesheet is auto-linked: `src/views/story/story.scss` is injected as `/_crumbun/story/story.css` when you render `story/story`. Opt out with `render(view, { css: false })`. You can also link the source directly (`/_crumbun/story/story.scss`) in dev.
 - `src/views/_layout.pug` can wrap rendered views.
 - `src/views/_error.pug` can render 404 and 500 pages.
 

@@ -125,8 +125,8 @@ Folder names in parentheses, such as src/api/(marketing)/about/page.ts, are rout
 ## Views
 
 - render("story/story") renders src/views/story/story.pug.
-- Link global SCSS with /_crumbun/style.css.
-- Link nested view SCSS with /_crumbun/story/story.css.
+- Link global SCSS with /_crumbun/style.css (crumbun compiles src/views/*.scss).
+- A view's own SCSS is auto-linked: create src/views/story/story.scss next to story.pug and crumbun adds the stylesheet link. Link the source directly with /_crumbun/story/story.scss in dev when you want control.
 - src/views/_layout.pug (optional) wraps every view; emit the view with != content.
 - src/views/_error.pug (optional) renders 404 and error responses with status and message locals.
 
@@ -451,8 +451,8 @@ pre {
   }
 }
 `,
-    "src/views/story/story.pug": `article.panel.story
-  link(rel="stylesheet" href="/_crumbun/story/story.css")
+    "src/views/story/story.pug": `//- story.scss next to this file is auto-linked by crumbun
+article.panel.story
   h2= story.title
   p.hint= story.lede
   label Route

@@ -97,6 +97,12 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
       if (wrapped != null) html = wrapped;
     }
 
+    // ponytail: auto-link the view's own stylesheet (story.scss -> /_crumbun/story/story.css)
+    if (locals.css !== false) {
+      const link = await adjacentStylesheetLink(viewsDir, view);
+      if (link) html = injectIntoHead(html, link);
+    }
+
     const headers = new Headers(init.headers);
     headers.set("content-type", "text/html; charset=utf-8");
     return new Response(html, { ...init, headers });
@@ -270,6 +276,26 @@ function allowedMethods(module: import("./types").PageModule) {
   const allowed = methods.filter((method) => module[method]);
   if (module.GET && !allowed.includes("HEAD")) allowed.push("HEAD");
   return allowed;
+}
+
+function injectIntoHead(html: string, tag: string): string {
+  const head = html.indexOf("</head>");
+  if (head !== -1) return `${html.slice(0, head)}${tag}\n${html.slice(head)}`;
+  const body = html.indexOf("</body>");
+  if (body !== -1) return `${html.slice(0, body)}${tag}\n${html.slice(body)}`;
+  return `${tag}\n${html}`;
+}
+
+async function adjacentStylesheetLink(viewsDir: string, view: string): Promise<string | null> {
+  const base = view.endsWith(".pug") ? view.slice(0, -4) : view;
+  for (const ext of [".scss", ".css"]) {
+    const rel = `${base}${ext}`;
+    const path = safePath(viewsDir, rel);
+    if (path && (await Bun.file(path).exists())) {
+      return `<link rel="stylesheet" href="/_crumbun/${base}.css">`;
+    }
+  }
+  return null;
 }
 
 function withoutHeadBody(request: Request, response: Response) {

@@ -43,18 +43,26 @@ export async function fileResponse(root: string, pathname: string, request?: Req
 }
 
 export async function viewAssetResponse(viewsDir: string, pathname: string, request?: Request) {
-  if (!pathname.startsWith("/_crumbun/") || !cssFile.test(pathname)) return null;
+  if (!pathname.startsWith("/_crumbun/")) return null;
+  if (!cssFile.test(pathname) && !scssFile.test(pathname)) return null;
 
   const cssName = pathname.slice("/_crumbun/".length);
-  const cssPath = safePath(viewsDir, cssName);
-  if (cssPath && (await Bun.file(cssPath).exists())) return fileResponse(viewsDir, cssName, request);
 
-  const scssPath = safePath(viewsDir, cssName.replace(cssFile, ".scss"));
-  if (!scssPath) return null;
+  if (cssFile.test(cssName)) {
+    const cssPath = safePath(viewsDir, cssName);
+    if (cssPath && (await Bun.file(cssPath).exists())) return fileResponse(viewsDir, cssName, request);
 
-  const file = Bun.file(scssPath);
-  if (!(await file.exists())) return null;
+    const scssPath = safePath(viewsDir, cssName.replace(cssFile, ".scss"));
+    if (scssPath && (await Bun.file(scssPath).exists())) return serveCompiledScss(scssPath, request);
+    return null;
+  }
 
+  const scssPath = safePath(viewsDir, cssName);
+  if (scssPath && (await Bun.file(scssPath).exists())) return serveCompiledScss(scssPath, request);
+  return null;
+}
+
+function serveCompiledScss(scssPath: string, request?: Request) {
   const css = compileScss(scssPath);
   const etag = `"scss-${createHash("sha1").update(css).digest("hex")}"`;
   const headers = new Headers({

@@ -319,3 +319,51 @@ test("spa fallback renders index for unknown GETs", async () => {
   expect(response.status).toBe(200);
   expect(await response.text()).toContain("App");
 });
+
+test("auto-links adjacent view stylesheet into head", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-autocss-"));
+  await mkdir(join(root, "src/api/page"), { recursive: true });
+  await mkdir(join(root, "src/views/story"), { recursive: true });
+  await writeFile(join(root, "src/api/page/page.ts"), 'export function GET({ render }) { return render("story/story"); }\n');
+  await writeFile(join(root, "src/views/_layout.pug"), "html\n  head\n  body\n    != content\n");
+  await writeFile(join(root, "src/views/story/story.pug"), "article hi\n");
+  await writeFile(join(root, "src/views/story/story.scss"), "$c: red;\n.a { color: $c; }\n");
+
+  const app = await createApp({ root });
+  const html = await (await app.fetch(new Request("http://crumbun.test/page"))).text();
+  const link = '<link rel="stylesheet" href="/_crumbun/story/story.css">';
+
+  expect(html).toContain(link);
+  expect(html.indexOf(link)).toBeLessThan(html.indexOf("</head>"));
+});
+
+test("skips auto stylesheet link when css: false", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-autocss-off-"));
+  await mkdir(join(root, "src/api/page"), { recursive: true });
+  await mkdir(join(root, "src/views/story"), { recursive: true });
+  await writeFile(join(root, "src/api/page/page.ts"), 'export function GET({ render }) { return render("story/story", { css: false }); }\n');
+  await writeFile(join(root, "src/views/_layout.pug"), "html\n  head\n  body\n    != content\n");
+  await writeFile(join(root, "src/views/story/story.pug"), "article hi\n");
+  await writeFile(join(root, "src/views/story/story.scss"), "body { color: red; }\n");
+
+  const app = await createApp({ root });
+  const html = await (await app.fetch(new Request("http://crumbun.test/page"))).text();
+
+  expect(html).not.toContain('<link rel="stylesheet"');
+});
+
+test("serves view scss directly at its source path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-scss-direct-"));
+  await mkdir(join(root, "src/views/story"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+  await writeFile(join(root, "src/views/story/story.scss"), "$c: red;\n.a { color: $c; }\n");
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/_crumbun/story/story.scss"));
+  const css = await response.text();
+
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toContain("text/css");
+  expect(css).toContain(".a {");
+  expect(css).toContain("color: red");
+});
