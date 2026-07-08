@@ -84,20 +84,55 @@ export function getStory(id: string) {
 `,
     "src/views/index.pug": `extends layout/layout.pug
 
+block nav
+  a.active(href="/") Start
+  a(href="/story/first-light") First Light
+  a(href="/story/quiet-console") Quiet Console
+
 block content
-  section.intro
-    p.kicker Crumbun
-    h1 Small Bun fullstack app with Pug views.
-    p Pick a story route rendered by src/api/story/[id]/page.ts.
-    nav.story-links(aria-label="Stories")
-      a(href="/story/first-light") First Light
-      a(href="/story/quiet-console") Quiet Console
+  section.panel.active
+    h2 Start
+    p.hint This page is rendered from src/views/index.pug. Story pages are handled by src/api/story/[id]/page.ts.
+    label Command
+    pre
+      code.
+        bun run dev
+        open /story/first-light
+    div.out
+      div.row
+        span.rank 01
+        span.lbl engine
+        code crumbun
+      div.row
+        span.rank 02
+        span.lbl routes
+        code src/api/**/page.ts
+      div.row
+        span.rank 03
+        span.lbl views
+        code src/views/**/*.pug
+
+  section.panel.active
+    h2 Stories
+    p.hint Pick a route rendered by a page handler and a Pug view.
+    div.out
+      a.row.link-row(href="/story/first-light")
+        span.rank GET
+        span.lbl /story/first-light
+        code First Light
+      a.row.link-row(href="/story/quiet-console")
+        span.rank GET
+        span.lbl /story/quiet-console
+        code Quiet Console
 `,
     "src/views/style.css": `:root {
-  color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #172033;
-  background: #eef2f7;
+  --bg: #0c0c0e;
+  --fg: #c9c9c9;
+  --mut: #6f6f78;
+  --line: #232329;
+  --acc: #9ece6a;
+  --bar: #1a1a1f;
+  color-scheme: dark;
 }
 
 * {
@@ -106,10 +141,28 @@ block content
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 a {
-  color: inherit;
+  color: var(--acc);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration: underline;
+}
+
+code {
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #141417;
+  padding: 1px 5px;
+  font-size: 12px;
 }
 `,
     "src/views/layout/layout.pug": `doctype html
@@ -123,82 +176,229 @@ html(lang="en")
     link(rel="stylesheet" href="/_crumbun/layout/layout.css")
     block head
   body
+    header.shell-head
+      h1 crumbun
+      p tiny Bun app · file routes · Pug views
+    nav.shell-nav(aria-label="App")
+      block nav
+        a(href="/") Start
     main.shell
       block content
 `,
-    "src/views/layout/layout.css": `.shell {
-  width: min(920px, calc(100% - 32px));
+    "src/views/layout/layout.css": `.shell,
+.shell-head,
+.shell-nav {
+  max-width: 760px;
   margin: 0 auto;
-  padding: 56px 0;
 }
 
-.intro {
-  display: grid;
-  gap: 18px;
+.shell-head {
+  padding: 52px 20px 10px;
 }
 
-.kicker {
+.shell-head h1 {
   margin: 0;
-  color: #b45309;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.shell-head h1::before {
+  content: "~/ ";
+  color: var(--mut);
+}
+
+.shell-head p {
+  margin: 8px 0 0;
+  color: var(--mut);
+  font-size: 13px;
+}
+
+.shell-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  padding: 16px 20px;
+}
+
+.shell-nav a {
+  color: var(--mut);
+  font-size: 13px;
+}
+
+.shell-nav a:hover,
+.shell-nav a:focus-visible,
+.shell-nav a.active {
+  color: var(--fg);
+}
+
+.shell-nav a.active {
+  border-bottom: 1px solid var(--acc);
+  text-decoration: none;
+}
+
+.shell {
+  padding: 26px 20px 80px;
+}
+
+.panel {
+  margin-bottom: 34px;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+h2::before {
+  content: "# ";
+  color: var(--acc);
+}
+
+.hint {
+  margin: 0 0 18px;
+  color: var(--mut);
+  font-size: 12.5px;
+}
+
+label {
+  display: block;
+  margin: 16px 0 6px;
+  color: var(--mut);
+  font-size: 11px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
-h1 {
-  max-width: 760px;
+pre {
+  overflow: auto;
   margin: 0;
-  font-size: clamp(2.25rem, 7vw, 5.5rem);
-  line-height: 0.95;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #111114;
+  padding: 9px 11px;
+  color: var(--fg);
+  font: inherit;
 }
 
-p {
-  max-width: 640px;
-  margin: 0;
-  color: #516070;
-  font-size: 1.08rem;
-  line-height: 1.7;
+pre code {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+}
+
+.out {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.link-row {
+  color: var(--fg);
+}
+
+.rank {
+  width: 42px;
+  color: var(--acc);
+  font-weight: 600;
+}
+
+.lbl {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .shell-head {
+    padding-top: 34px;
+  }
+
+  .shell-nav {
+    gap: 14px;
+  }
+
+  .row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rank {
+    width: auto;
+  }
+
+  .lbl {
+    white-space: normal;
+  }
 }
 `,
     "src/views/story/story.pug": `extends ../layout/layout.pug
+
+block nav
+  a(href="/") Start
+  a(class=story.id === "first-light" ? "active" : "" href="/story/first-light") First Light
+  a(class=story.id === "quiet-console" ? "active" : "" href="/story/quiet-console") Quiet Console
 
 block head
   link(rel="stylesheet" href="/_crumbun/story/story.css")
 
 block content
-  article.story
-    a.back(href="/") Back
-    p.kicker= story.tag
-    h1= story.title
-    p.lede= story.lede
-    each paragraph in story.body
-      p= paragraph
+  article.panel.story
+    h2= story.title
+    p.hint= story.lede
+    label Route
+    pre
+      code= "/story/" + story.id
+    div.out
+      div.row
+        span.rank tag
+        span.lbl= story.tag
+        code story
+      div.row
+        span.rank view
+        span.lbl src/views/story/story.pug
+        code render()
+      div.row
+        span.rank css
+        span.lbl /_crumbun/story/story.css
+        code static
+    div.copy
+      each paragraph in story.body
+        p= paragraph
 `,
-    "src/views/story/story.css": `.story {
+    "src/views/story/story.css": `.story .copy {
   display: grid;
-  gap: 18px;
-}
-
-.story-links {
-  display: flex;
-  flex-wrap: wrap;
   gap: 12px;
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #111114;
+  padding: 14px;
 }
 
-.story-links a,
-.back {
-  border: 1px solid #cad2df;
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 10px 14px;
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.lede {
-  color: #172033;
-  font-size: 1.22rem;
+.story .copy p {
+  margin: 0;
+  color: var(--fg);
 }
 `,
     "src/utils/corpus.js": `export const stories = [
