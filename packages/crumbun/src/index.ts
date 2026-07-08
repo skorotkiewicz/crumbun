@@ -120,6 +120,24 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
   }
 
   async function fetch(request: Request) {
+    try {
+      return withoutHeadBody(request, await routeRequest(request));
+    } catch {
+      try {
+        return withoutHeadBody(request, await errorResponse(500, "Internal server error"));
+      } catch {
+        return withoutHeadBody(
+          request,
+          new Response("Internal server error", {
+            status: 500,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          }),
+        );
+      }
+    }
+  }
+
+  async function routeRequest(request: Request) {
     const url = new URL(request.url);
 
     if (request.method === "GET" || request.method === "HEAD") {
@@ -138,12 +156,21 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
       }
     }
 
-    const route = routes.find((candidate) => matchPattern(candidate.pattern, url.pathname));
+    let match: { route: (typeof routes)[number]; params: Record<string, string> } | null = null;
+    for (const route of routes) {
+      const params = matchPattern(route.pattern, url.pathname);
+      if (params) {
+        match = { route, params };
+        break;
+      }
+    }
 
-    if (route) {
-      const params = matchPattern(route.pattern, url.pathname) ?? {};
-      const method = request.method === "HEAD" ? "GET" : (request.method as HttpMethod);
-      const handler = route.module[method] ?? route.module.default;
+    if (match) {
+      const { route, params } = match;
+      const method = request.method as HttpMethod;
+      const handler = method === "HEAD"
+        ? route.module.HEAD ?? route.module.GET ?? route.module.default
+        : route.module[method] ?? route.module.default;
 
       if (!handler) {
         return errorResponse(405, "Method not allowed", {
@@ -240,5 +267,16 @@ function toResponse(result: PageResult) {
 }
 
 function allowedMethods(module: import("./types").PageModule) {
-  return methods.filter((method) => module[method]);
+  const allowed = methods.filter((method) => module[method]);
+  if (module.GET && !allowed.includes("HEAD")) allowed.push("HEAD");
+  return allowed;
+}
+
+function withoutHeadBody(request: Request, response: Response) {
+  if (request.method !== "HEAD") return response;
+  return new Response(null, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
 }

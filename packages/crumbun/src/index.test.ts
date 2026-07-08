@@ -160,11 +160,12 @@ test("cookies parse incoming and set outgoing", async () => {
   );
 
   const app = await createApp({ root });
-  const response = await app.fetch(new Request("http://crumbun.test/whoami", { headers: { cookie: "token=abc" } }));
+  const response = await app.fetch(new Request("http://crumbun.test/whoami", { headers: { cookie: "token=abc; bad=%E0%A4%A" } }));
   const body = (await response.json()) as { had: string; all: Record<string, string> };
 
   expect(body.had).toBe("abc");
   expect(body.all.token).toBe("abc");
+  expect(body.all.bad).toBe("%E0%A4%A");
   expect(response.headers.get("set-cookie")).toContain("seen=1");
 });
 
@@ -179,6 +180,20 @@ test("renders custom error page when present", async () => {
 
   expect(response.status).toBe(404);
   expect(await response.text()).toContain("Not found (404)");
+});
+
+test("renders custom error page for thrown handlers", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-error-"));
+  await mkdir(join(root, "src/api/boom"), { recursive: true });
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/api/boom/page.ts"), 'export function GET() { throw new Error("boom"); }\n');
+  await writeFile(join(root, "src/views/_error.pug"), 'p.error= message + " (" + status + ")"\n');
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/boom"));
+
+  expect(response.status).toBe(500);
+  expect(await response.text()).toContain("Internal server error (500)");
 });
 
 test("wraps views in _layout.pug unless opted out", async () => {
@@ -215,6 +230,37 @@ test("serves static assets with etag and 304", async () => {
 
   const second = await app.fetch(new Request("http://crumbun.test/hello.txt", { headers: { "if-none-match": etag } }));
   expect(second.status).toBe(304);
+});
+
+test("HEAD responses keep headers without bodies", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-head-"));
+  await mkdir(join(root, "src/api/ping"), { recursive: true });
+  await mkdir(join(root, "public"), { recursive: true });
+  await writeFile(join(root, "src/api/ping/page.ts"), 'export function GET() { return new Response("pong", { headers: { "x-ping": "1" } }); }\n');
+  await writeFile(join(root, "public/hello.txt"), "hi");
+
+  const app = await createApp({ root });
+  const route = await app.fetch(new Request("http://crumbun.test/ping", { method: "HEAD" }));
+  const file = await app.fetch(new Request("http://crumbun.test/hello.txt", { method: "HEAD" }));
+
+  expect(route.status).toBe(200);
+  expect(route.headers.get("x-ping")).toBe("1");
+  expect(await route.text()).toBe("");
+  expect(file.status).toBe(200);
+  expect(file.headers.get("etag")).not.toBeNull();
+  expect(await file.text()).toBe("");
+});
+
+test("Allow includes HEAD when GET exists", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-allow-"));
+  await mkdir(join(root, "src/api/get-only"), { recursive: true });
+  await writeFile(join(root, "src/api/get-only/page.ts"), 'export function GET() { return "ok"; }\n');
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/get-only", { method: "POST" }));
+
+  expect(response.status).toBe(405);
+  expect(response.headers.get("allow")).toBe("GET, HEAD");
 });
 
 test("spa fallback renders index for unknown GETs", async () => {

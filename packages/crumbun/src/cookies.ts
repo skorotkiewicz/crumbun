@@ -22,7 +22,12 @@ export function parseCookies(header: string): Record<string, string> {
     if (index === -1) continue;
     const name = part.slice(0, index).trim();
     const value = part.slice(index + 1).trim();
-    if (name) out[name] = decodeURIComponent(value);
+    if (!name) continue;
+    try {
+      out[name] = decodeURIComponent(value);
+    } catch {
+      out[name] = value;
+    }
   }
 
   return out;
