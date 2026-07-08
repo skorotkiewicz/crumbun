@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { expect, test } from "bun:test";
-import { createApp, matchPattern, routePatternFromPageFile } from "./index";
+import { createApp, exportStatic, matchPattern, routePatternFromPageFile } from "./index";
 
 test("turns file routes into URL patterns", () => {
   expect(routePatternFromPageFile("/app/src/api", "/app/src/api/story/[id]/page.ts")).toBe("/story/:id");
@@ -24,4 +24,28 @@ test("serves dynamic page modules", async () => {
 
   expect(response.status).toBe(200);
   expect(await response.text()).toBe("story:abc");
+});
+
+test("exports static pages and assets", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-static-"));
+
+  await mkdir(join(root, "public"), { recursive: true });
+  await mkdir(join(root, "src/api/story/[id]"), { recursive: true });
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "public/favicon.svg"), "<svg />\n");
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+  await writeFile(join(root, "src/views/style.css"), "body { color: red; }\n");
+  await writeFile(
+    join(root, "src/api/story/[id]/page.ts"),
+    'export function GET({ params }) { return `story:${params.id}`; }\n',
+  );
+
+  const result = await exportStatic({ root, paths: ["/", "/story/abc"] });
+
+  expect(result.outDir).toBe(join(root, "dist"));
+  expect(await Bun.file(join(root, "dist/index.html")).text()).toContain("<h1>Home</h1>");
+  expect(await Bun.file(join(root, "dist/story/abc/index.html")).text()).toBe("story:abc");
+  expect(await Bun.file(join(root, "dist/favicon.svg")).text()).toBe("<svg />\n");
+  expect(await Bun.file(join(root, "dist/_crumbun/style.css")).text()).toBe("body { color: red; }\n");
+  expect(await Bun.file(join(root, "dist/.nojekyll")).exists()).toBe(true);
 });
