@@ -10,14 +10,14 @@
     },
     "packages/create-crumbun": {
       "name": "create-crumbun",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "bin": {
         "create-crumbun": "src/index.ts",
       },
     },
     "packages/crumbun": {
       "name": "crumbun",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "pug": "^3.0.4",
       },

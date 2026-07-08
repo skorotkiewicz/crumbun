@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { dirname, extname, relative, resolve, sep } from "node:path";
+import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { readdir } from "node:fs/promises";
+import { cp, mkdir, readdir, rm } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 const pug = require("pug") as {
@@ -29,6 +29,16 @@ export type CrumbunOptions = {
   port?: number;
   hostname?: string;
   development?: boolean;
+};
+
+export type StaticExportOptions = CrumbunOptions & {
+  outDir?: string;
+  paths?: string[];
+  clean?: boolean;
+};
+
+export type StaticExportResult = {
+  outDir: string;
 };
 
 type PageModule = Partial<Record<HttpMethod, PageHandler>> & {
@@ -132,6 +142,35 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
   return { root, fetch };
 }
 
+export async function exportStatic(options: StaticExportOptions = {}): Promise<StaticExportResult> {
+  const root = resolve(options.root ?? process.cwd());
+  const outDir = resolve(root, options.outDir ?? "dist");
+
+  if (outDir === root) throw new Error("Refusing to export into the app root");
+  if (options.clean !== false) await rm(outDir, { recursive: true, force: true });
+
+  const app = await createApp({ root, development: options.development });
+  await mkdir(outDir, { recursive: true });
+  await copyIfExists(resolve(root, "public"), outDir);
+  await copyViewStyles(resolve(root, "src/views"), join(outDir, "_crumbun"));
+  await Bun.write(join(outDir, ".nojekyll"), "");
+
+  for (const path of options.paths ?? ["/"]) {
+    const url = new URL(path, "https://crumbun.local");
+    const response = await app.fetch(new Request(url.href));
+
+    if (!response.ok) {
+      throw new Error(`Failed to export ${url.pathname}: ${response.status}`);
+    }
+
+    const outputPath = staticOutputPath(outDir, url.pathname, response.headers.get("content-type") ?? "");
+    await mkdir(dirname(outputPath), { recursive: true });
+    await Bun.write(outputPath, await response.arrayBuffer());
+  }
+
+  return { outDir };
+}
+
 export function routePatternFromPageFile(apiDir: string, file: string) {
   const parts = relative(apiDir, dirname(file))
     .split(sep)
@@ -182,13 +221,17 @@ async function loadRoutes(apiDir: string, development: boolean) {
   return routes.sort((a, b) => a.dynamicCount - b.dynamicCount || b.pattern.length - a.pattern.length);
 }
 
-async function findPages(dir: string): Promise<string[]> {
+async function findPages(dir: string) {
+  return findFiles(dir, (name) => pageFile.test(name));
+}
+
+async function findFiles(dir: string, matches: (name: string) => boolean): Promise<string[]> {
   let entries;
 
   try {
     entries = await readdir(dir, { withFileTypes: true });
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
+    if (isNotFound(error)) return [];
     throw error;
   }
 
@@ -198,13 +241,41 @@ async function findPages(dir: string): Promise<string[]> {
     const path = resolve(dir, entry.name);
 
     if (entry.isDirectory()) {
-      files.push(...(await findPages(path)));
-    } else if (entry.isFile() && pageFile.test(entry.name)) {
+      files.push(...(await findFiles(path, matches)));
+    } else if (entry.isFile() && matches(entry.name)) {
       files.push(path);
     }
   }
 
   return files;
+}
+
+async function copyIfExists(from: string, to: string) {
+  try {
+    await cp(from, to, { recursive: true, force: true });
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
+  }
+}
+
+async function copyViewStyles(viewsDir: string, outDir: string) {
+  for (const file of await findFiles(viewsDir, (name) => name.endsWith(".css"))) {
+    const outputPath = join(outDir, relative(viewsDir, file));
+    await mkdir(dirname(outputPath), { recursive: true });
+    await cp(file, outputPath);
+  }
+}
+
+function staticOutputPath(outDir: string, pathname: string, contentType: string) {
+  const cleanPath = pathname.replace(/^\/+/, "");
+  const isHtml = contentType.toLowerCase().includes("text/html");
+  const outputFile = isHtml && (!cleanPath || cleanPath.endsWith("/") || !extname(cleanPath))
+    ? join(cleanPath, "index.html")
+    : cleanPath || "index.html";
+  const outputPath = safePath(outDir, outputFile);
+
+  if (!outputPath) throw new Error(`Refusing to export unsafe path: ${pathname}`);
+  return outputPath;
 }
 
 async function viewAssetResponse(viewsDir: string, pathname: string) {
@@ -280,4 +351,8 @@ function contentType(path: string) {
     default:
       return "application/octet-stream";
   }
+}
+
+function isNotFound(error: unknown) {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

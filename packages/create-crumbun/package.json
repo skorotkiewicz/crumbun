@@ -1,7 +1,7 @@
 {
   "name": "create-crumbun",
-  "version": "0.1.1",
-  "description": "Create a tiny Bun fullstack app using crumbun and Pug.",
+  "version": "0.2.0",
+  "description": "Create a tiny Bun fullstack app using crumbun, Pug, and static export.",
   "type": "module",
   "bin": {
     "create-crumbun": "src/index.ts"

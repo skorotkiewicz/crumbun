@@ -111,6 +111,12 @@ Views and assets:
 - CSS in `src/views` is served from `/_crumbun`.
 - `src/views/story/story.css` is available at `/_crumbun/story/story.css`.
 
+Static export:
+
+- Use `exportStatic({ root, paths })` from `crumbun` to write static pages.
+- Static export writes to `dist` by default, copies `public`, copies `src/views/**/*.css` to `/_crumbun`, and writes `.nojekyll`.
+- Keep `paths` explicit for dynamic routes that should be pre-rendered.
+
 ## Working On The Engine
 
 - Keep `packages/crumbun/src/index.ts` small and direct.
@@ -124,6 +130,7 @@ Views and assets:
 - `packages/create-crumbun/src/index.ts` embeds the starter app as strings.
 - Generated apps should depend on the current published `crumbun` version unless deliberately preparing a local-only dev flow.
 - Keep the scaffold boring: `public`, `src/api`, `src/views`, and `src/utils`.
+- Keep the generated `src/export.ts` path list in sync with starter routes.
 - Verify CLI changes by scaffolding into `/tmp` and inspecting the generated `package.json` and imports.
 
 ## Publishing

@@ -43,6 +43,7 @@ function files(name: string) {
         private: true,
         type: "module",
         scripts: {
+          build: "bun src/export.ts",
           dev: "bun --hot src/server.ts",
           start: "bun src/server.ts",
         },
@@ -69,11 +70,16 @@ Then:
     bun install
     bun run dev
 
+To export static HTML:
+
+    bun run build
+
 ## Use Bun
 
 - Use bun, not node.
 - Use bun install for dependencies.
 - Use bun run dev during local development.
+- Use bun run build to export static pages into dist/.
 - Use Bun.serve through crumbun; do not add Express.
 - Do not add Vite, webpack, Jest, Vitest, or dotenv unless explicitly needed.
 
@@ -81,6 +87,7 @@ Then:
 
 - public/ contains static files served from /.
 - src/server.ts starts crumbun.
+- src/export.ts exports static pages with crumbun.
 - src/api/**/page.ts creates routes.
 - src/views/**/*.pug contains Pug views.
 - src/views/**/*.css is served from /_crumbun.
@@ -115,6 +122,12 @@ Return values:
 - Link nested view CSS with /_crumbun/story/story.css.
 - Keep layout markup in src/views/layout/layout.pug.
 
+## Static Export
+
+- bun run build writes static files to dist/.
+- Keep paths in src/export.ts in sync with routes that should be pre-rendered.
+- Static export copies public/ and src/views/**/*.css automatically.
+
 ## Working Here
 
 - Read the existing route and view before editing.
@@ -131,6 +144,16 @@ const server = await serve({
 });
 
 console.log(\`Crumbun running at http://\${server.hostname}:\${server.port}\`);
+`,
+    "src/export.ts": `import { fileURLToPath } from "node:url";
+import { exportStatic } from "crumbun";
+
+const result = await exportStatic({
+  root: fileURLToPath(new URL("..", import.meta.url)),
+  paths: ["/", "/story/first-light", "/story/quiet-console"],
+});
+
+console.log(\`Crumbun static site exported to \${result.outDir}\`);
 `,
     "src/api/story/[id]/page.ts": `import type { PageContext } from "crumbun";
 import { getStory } from "./getstory";
@@ -167,6 +190,7 @@ block content
     pre
       code.
         bun run dev
+        bun run build
         open /story/first-light
     div.out
       div.row
@@ -179,6 +203,10 @@ block content
         code src/api/**/page.ts
       div.row
         span.rank 03
+        span.lbl static
+        code exportStatic()
+      div.row
+        span.rank 04
         span.lbl views
         code src/views/**/*.pug
 

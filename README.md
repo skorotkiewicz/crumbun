@@ -1,6 +1,6 @@
 # crumbun
 
-A tiny Bun fullstack engine with file routes and Pug templates.
+A tiny Bun fullstack engine with file routes, Pug templates, and static export.
 
 ## Layout
 
@@ -35,4 +35,10 @@ Views live in `src/views`. Use `render("story/story", locals)` from a page modul
 
 ```bash
 bun run site
+```
+
+Build the static website:
+
+```bash
+bun run --cwd site build
 ```

@@ -1,7 +1,7 @@
 {
   "name": "crumbun",
-  "version": "0.1.1",
-  "description": "Tiny Bun fullstack engine with file routes and Pug templates.",
+  "version": "0.2.0",
+  "description": "Tiny Bun fullstack engine with file routes, Pug templates, and static export.",
   "type": "module",
   "main": "./src/index.ts",
   "exports": {

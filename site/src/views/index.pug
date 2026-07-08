@@ -3,7 +3,7 @@ html(lang="en")
   head
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1")
-    meta(name="description" content="crumbun is a tiny Bun fullstack engine with file routes and Pug templates.")
+    meta(name="description" content="crumbun is a tiny Bun fullstack engine with file routes, Pug templates, and static export.")
     title crumbun · Bun + Pug
     link(rel="icon" href="favicon.svg")
     link(rel="preload" as="image" href="crumbun-board.png")
@@ -11,7 +11,7 @@ html(lang="en")
   body
     header
       h1 crumbun
-      p tiny Bun fullstack engine · file routes · Pug views · no framework ceremony
+      p tiny Bun fullstack engine · file routes · Pug views · static export
       p.links
         a(href="https://www.npmjs.com/package/crumbun") npm: crumbun
         a(href="https://www.npmjs.com/package/create-crumbun") bunx create-crumbun
@@ -20,6 +20,7 @@ html(lang="en")
       button.active(type="button" data-tab="start") Start
       button(type="button" data-tab="routes") Routes
       button(type="button" data-tab="views") Views
+      button(type="button" data-tab="static") Static
       button(type="button" data-tab="handler") Handler
 
     main
@@ -103,6 +104,33 @@ html(lang="en")
             span.rank pub
             span.lbl public assets
             code /favicon.svg
+
+      section.panel(data-panel="static")
+        h2 Static
+        p.hint `exportStatic` renders selected routes and copies assets into `dist`.
+        label src/export.ts
+        pre
+          code.
+            import { fileURLToPath } from "node:url";
+            import { exportStatic } from "crumbun";
+
+            await exportStatic({
+              root: fileURLToPath(new URL("..", import.meta.url)),
+              paths: ["/", "/story/first-light"],
+            });
+        div.out
+          div.row
+            span.rank html
+            span.lbl rendered pages
+            code dist/story/first-light/index.html
+          div.row
+            span.rank css
+            span.lbl view styles
+            code dist/_crumbun/style.css
+          div.row
+            span.rank pub
+            span.lbl public assets
+            code dist/favicon.svg
 
       section.panel(data-panel="handler")
         h2 Handler

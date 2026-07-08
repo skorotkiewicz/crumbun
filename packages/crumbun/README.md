@@ -1,6 +1,6 @@
 # crumbun
 
-Tiny Bun fullstack engine with file routes and Pug templates.
+Tiny Bun fullstack engine with file routes, Pug templates, and static export.
 
 ## Install
 
@@ -36,3 +36,17 @@ export function GET({ params, render }: PageContext) {
 Views live in `src/views`. `render("story/story")` renders `src/views/story/story.pug`.
 
 CSS in `src/views` is served from `/_crumbun`, so `src/views/story/story.css` is available at `/_crumbun/story/story.css`.
+
+## Static Export
+
+```ts
+import { fileURLToPath } from "node:url";
+import { exportStatic } from "crumbun";
+
+await exportStatic({
+  root: fileURLToPath(new URL("..", import.meta.url)),
+  paths: ["/", "/story/first-light"],
+});
+```
+
+`exportStatic` writes to `dist` by default. It renders the listed paths, copies `public`, copies `src/views/**/*.css` to `/_crumbun`, and writes `.nojekyll` for GitHub Pages.
