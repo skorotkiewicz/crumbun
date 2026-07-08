@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { expect, test } from "bun:test";
-import { createApp, exportStatic, matchPattern, routePatternFromPageFile } from "./index";
+import { createApp, exportStatic, highlightCode, matchPattern, routePatternFromPageFile } from "./index";
 
 test("turns file routes into URL patterns", () => {
   expect(routePatternFromPageFile("/app/src/api", "/app/src/api/story/[id]/page.ts")).toBe("/story/:id");
@@ -24,6 +24,28 @@ test("serves dynamic page modules", async () => {
 
   expect(response.status).toBe(200);
   expect(await response.text()).toBe("story:abc");
+});
+
+test("highlights and escapes code", () => {
+  const html = highlightCode('const tag = "<script>"; // safe', "ts");
+
+  expect(html).toContain('<span class="cb-keyword">const</span>');
+  expect(html).toContain('<span class="cb-string">"&lt;script&gt;"</span>');
+  expect(html).toContain('<span class="cb-comment">// safe</span>');
+  expect(html).not.toContain("<script>");
+});
+
+test("exposes code highlighting to views", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-highlight-"));
+
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), 'pre\n  code!= highlightCode("export const app = serve()", "ts")\n');
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/"));
+
+  expect(response.status).toBe(200);
+  expect(await response.text()).toContain('<span class="cb-keyword">export</span>');
 });
 
 test("exports static pages and assets", async () => {

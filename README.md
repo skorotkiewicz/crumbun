@@ -31,6 +31,8 @@ The engine maps `src/api/**/page.ts` to routes. A folder named `[id]` becomes a 
 
 Views live in `src/views`. Use `render("story/story", locals)` from a page module to render `src/views/story/story.pug`.
 
+Views can use `highlightCode(source, language)` for escaped syntax-highlighted snippets.
+
 ## Website
 
 ```bash

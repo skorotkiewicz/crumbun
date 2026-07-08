@@ -37,6 +37,17 @@ Views live in `src/views`. `render("story/story")` renders `src/views/story/stor
 
 CSS in `src/views` is served from `/_crumbun`, so `src/views/story/story.css` is available at `/_crumbun/story/story.css`.
 
+## Syntax Highlighting
+
+`highlightCode(source, language)` is available inside Pug views and can also be imported from `crumbun`.
+
+```pug
+pre
+  code.language-ts!= highlightCode("export const app = serve()", "ts")
+```
+
+It returns escaped HTML with `cb-keyword`, `cb-builtin`, `cb-string`, `cb-number`, and `cb-comment` spans for styling.
+
 ## Static Export
 
 ```ts

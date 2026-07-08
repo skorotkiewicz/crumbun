@@ -1,3 +1,29 @@
+-
+  const startCode = [
+    "bunx create-crumbun my-app",
+    "cd my-app",
+    "bun install",
+    "bun run dev",
+  ].join("\n");
+  const staticCode = [
+    'import { fileURLToPath } from "node:url";',
+    'import { exportStatic } from "crumbun";',
+    "",
+    "await exportStatic({",
+    '  root: fileURLToPath(new URL("..", import.meta.url)),',
+    '  paths: ["/", "/story/first-light"],',
+    "});",
+  ].join("\n");
+  const handlerCode = [
+    'import type { PageContext } from "crumbun";',
+    "",
+    "export async function GET({ params, render }: PageContext) {",
+    '  return render("story/story", {',
+    "    title: `Story ${params.id}`,",
+    "  });",
+    "}",
+  ].join("\n");
+
 doctype html
 html(lang="en")
   head
@@ -29,11 +55,7 @@ html(lang="en")
         p.hint Create a crumbun app, install packages, run Bun. The generated server is one file.
         label Command
         pre
-          code.
-            bunx create-crumbun my-app
-            cd my-app
-            bun install
-            bun run dev
+          code.language-sh!= highlightCode(startCode, "sh")
         div.out
           div.row
             span.rank 01
@@ -55,12 +77,11 @@ html(lang="en")
           div
             label File
             pre
-              code.
-                src/api/story/[id]/page.ts
+              code.language-text!= highlightCode("src/api/story/[id]/page.ts")
           div
             label Route
             pre
-              code /story/:id
+              code.language-text!= highlightCode("/story/:id")
         div.out
           div.row
             span.rank GET
@@ -81,16 +102,7 @@ html(lang="en")
         p.hint Pug files live in `src/views`. CSS next to views is served from `/_crumbun`.
         label View tree
         pre
-          code.
-            src/views/
-              layout/
-                layout.pug
-                layout.css
-              story/
-                story.pug
-                story.css
-              index.pug
-              style.css
+          code.language-text!= highlightCode("src/views/\n  layout/\n    layout.pug\n    layout.css\n  story/\n    story.pug\n    story.css\n  index.pug\n  style.css")
         div.out
           div.row
             span.rank pug
@@ -110,14 +122,7 @@ html(lang="en")
         p.hint `exportStatic` renders selected routes and copies assets into `dist`.
         label src/export.ts
         pre
-          code.
-            import { fileURLToPath } from "node:url";
-            import { exportStatic } from "crumbun";
-
-            await exportStatic({
-              root: fileURLToPath(new URL("..", import.meta.url)),
-              paths: ["/", "/story/first-light"],
-            });
+          code.language-ts!= highlightCode(staticCode, "ts")
         div.out
           div.row
             span.rank html
@@ -137,14 +142,7 @@ html(lang="en")
         p.hint Handlers receive a tiny context and return Web responses or plain values.
         label page.ts
         pre
-          code.
-            import type { PageContext } from "crumbun";
-
-            export async function GET({ params, render }: PageContext) {
-              return render("story/story", {
-                title: `Story ${params.id}`,
-              });
-            }
+          code.language-ts!= highlightCode(handlerCode, "ts")
         div.out
           div.row
             span.rank req
