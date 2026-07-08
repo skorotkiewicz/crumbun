@@ -1,6 +1,12 @@
 # crumbun
 
-Tiny Bun fullstack engine with file routes, Pug templates, and static export.
+Tiny Bun fullstack engine with file routes, Pug views, and static export.
+
+## Fastest Start
+
+```bash
+bunx create-crumbun@latest my-app
+```
 
 ## Install
 
@@ -8,7 +14,7 @@ Tiny Bun fullstack engine with file routes, Pug templates, and static export.
 bun add crumbun
 ```
 
-## Use
+## Smallest App
 
 ```ts
 import { fileURLToPath } from "node:url";
@@ -21,7 +27,32 @@ const server = await serve({
 console.log(`Crumbun running at http://${server.hostname}:${server.port}`);
 ```
 
-Routes live in `src/api/**/page.ts`. A folder named `[id]` becomes a URL param, so `src/api/story/[id]/page.ts` handles `/story/:id`.
+Expected app shape:
+
+```txt
+public/
+src/
+  api/
+  views/
+  export.ts
+  server.ts
+```
+
+Add `src/views/index.pug`:
+
+```pug
+h1 Hello from crumbun
+```
+
+Run it:
+
+```bash
+bun --hot src/server.ts
+```
+
+## First Route
+
+`src/api/story/[id]/page.ts`
 
 ```ts
 import type { PageContext } from "crumbun";
@@ -33,49 +64,11 @@ export function GET({ params, render }: PageContext) {
 }
 ```
 
-Views live in `src/views`. `render("story/story")` renders `src/views/story/story.pug`.
-
-CSS and SCSS in `src/views` are served from `/_crumbun`, so `src/views/story/story.css` and `src/views/story/story.scss` are both available at `/_crumbun/story/story.css`. crumbun also serves a default highlight theme at `/_crumbun/highlight.css`.
-
-## Layouts and error pages
-
-Create `src/views/_layout.pug` to wrap every rendered view. The engine injects the
-view HTML as `content`, so emit it with `!= content`. Views that already use `extends`
-are left alone, and any view can opt out with `render("view", { layout: false })` or
-choose another layout with `render("view", { layout: "other/layout" })`.
-
-Create `src/views/_error.pug` to render 404 and other error responses. It receives
-`status` and `message` locals. Without it, crumbun returns plain text.
-
-## Handler context
-
-Handlers receive a small context. Alongside `request`, `params`, `url`, and `render`,
-it includes:
-
-- `json(value, init?)` — return JSON.
-- `redirect(path, status = 302)` — return a redirect `Response`.
-- `cookies` — parsed incoming cookies plus `get`/`set`/`delete`/`all`. Set cookies are attached to the response automatically.
-
-crumbun also exports `env(key, fallback?)` to read `Bun.env` safely (Bun loads `.env` automatically).
-
-```ts
-export function POST({ request, json, cookies, redirect }) {
-  cookies.set("session", "abc", { httpOnly: true });
-  if (request.headers.get("authorization") !== "Bearer x") return redirect("/login");
-  return json({ ok: true });
-}
-```
-
-## Syntax Highlighting
-
-`highlightCode(source, language)` is available inside Pug views and can also be imported from `crumbun`.
+`src/views/story/story.pug`
 
 ```pug
-pre
-  code.language-ts!= highlightCode("export const app = serve()", "ts")
+h1= title
 ```
-
-It returns escaped HTML with `cb-keyword`, `cb-builtin`, `cb-string`, `cb-regex`, `cb-number`, `cb-boolean`, `cb-function`, `cb-type`, `cb-property`, `cb-variable`, `cb-operator`, `cb-punct`, `cb-decorator`, and `cb-comment` spans for styling. Link `/_crumbun/highlight.css` for the default theme.
 
 ## Static Export
 
@@ -83,22 +76,31 @@ It returns escaped HTML with `cb-keyword`, `cb-builtin`, `cb-string`, `cb-regex`
 import { fileURLToPath } from "node:url";
 import { exportStatic } from "crumbun";
 
-await exportStatic({
+const result = await exportStatic({
   root: fileURLToPath(new URL("..", import.meta.url)),
   paths: ["/", "/story/first-light"],
 });
+
+console.log(`Exported ${result.outDir}`);
 ```
 
-`exportStatic` writes to `dist` by default. It renders the listed paths, copies `public`, copies `src/views/**/*.css` and compiled `src/views/**/*.scss` to `/_crumbun`, copies the default highlight theme to `/_crumbun/highlight.css`, and writes `.nojekyll` for GitHub Pages.
+## Conventions
 
-## Route groups
+- `src/api/**/page.ts` creates routes.
+- `[id]` becomes `params.id`.
+- `(group)` keeps a folder out of the URL.
+- `src/views/index.pug` renders `GET /` when no page route matches.
+- `render("story/story")` renders `src/views/story/story.pug`.
+- `public/` is served from `/`.
+- `src/views/**/*.css` and `src/views/**/*.scss` are served from `/_crumbun`.
+- `src/views/_layout.pug` can wrap rendered views.
+- `src/views/_error.pug` can render 404 and 500 pages.
 
-Wrap route folders in parentheses to keep them out of the URL. `src/api/(marketing)/about/page.ts` maps to `/about`, and `src/api/blog/(v2)/[slug]/page.ts` maps to `/blog/:slug`.
+## Handler Helpers
 
-## SPA mode
-
-Pass `spa: true` to `serve` or `createApp` to render the root view for any unknown GET request, so a client-side router can take over. Assets and API routes still win.
-
-## Static assets
-
-Public files and `/_crumbun` CSS are served with `Cache-Control: public, max-age=3600` and an `ETag`. Requests with a matching `If-None-Match` header get a `304` response.
+- `json(value, init?)` returns JSON.
+- `redirect(path, status?)` returns a redirect response.
+- `cookies.get/set/delete/all` reads and writes cookies.
+- `highlightCode(source, language?)` is available in Pug views and from `crumbun`.
+- `env(key, fallback?)` reads `Bun.env`.
+- `spa: true` makes unknown `GET` requests fall back to `index.pug`.

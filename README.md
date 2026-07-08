@@ -1,46 +1,76 @@
 # crumbun
 
-A tiny Bun fullstack engine with file routes, Pug templates, and static export.
+Tiny Bun fullstack engine.
+File routes. Pug views. Static export.
 
-## Layout
-
-```txt
-packages/crumbun          engine
-packages/create-crumbun   scaffold CLI
-```
-
-## Install
-
-```bash
-bun install
-```
-
-## Create an app
-
-```bash
-bun run create my-app
-```
-
-Or:
+## Start
 
 ```bash
 bunx create-crumbun@latest my-app
+cd my-app
+bun install
+bun run dev
 ```
 
-The engine maps `src/api/**/page.ts` to routes. A folder named `[id]` becomes a URL param, so `src/api/story/[id]/page.ts` handles `/story/:id`.
+Open `http://localhost:3000`.
 
-Views live in `src/views`. Use `render("story/story", locals)` from a page module to render `src/views/story/story.pug`.
-
-Views can use `highlightCode(source, language)` for escaped syntax-highlighted snippets.
-
-## Website
+Build a static site:
 
 ```bash
+bun run build
+```
+
+## From Scratch
+
+```bash
+bun add crumbun
+```
+
+```ts
+import { fileURLToPath } from "node:url";
+import { serve } from "crumbun";
+
+const server = await serve({
+  root: fileURLToPath(new URL("..", import.meta.url)),
+});
+
+console.log(`Crumbun running at http://${server.hostname}:${server.port}`);
+```
+
+Expected app shape:
+
+```txt
+public/
+src/
+  api/
+  views/
+  export.ts
+  server.ts
+```
+
+## How It Works
+
+- `src/api/**/page.ts` becomes routes.
+- `src/api/story/[id]/page.ts` handles `/story/:id`.
+- `src/views/index.pug` renders `GET /` when no page route matches.
+- `render("story/story")` renders `src/views/story/story.pug`.
+- `public/` is served from `/`.
+- `src/views/**/*.css` and `src/views/**/*.scss` are served from `/_crumbun`.
+- `exportStatic({ paths })` writes prerendered files to `dist/`.
+
+## Workspace
+
+```txt
+packages/crumbun          runtime engine
+packages/create-crumbun   scaffold CLI
+site                      docs/demo app
+```
+
+Useful commands:
+
+```bash
+bun install
+bun run check
+bun run create my-app
 bun run site
-```
-
-Build the static website:
-
-```bash
-bun run --cwd site build
 ```
