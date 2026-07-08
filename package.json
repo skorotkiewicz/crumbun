@@ -2,6 +2,12 @@
   "name": "crumbun-workspace",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "homepage": "https://sekor.eu.org/crumbun/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skorotkiewicz/crumbun.git"
+  },
   "workspaces": [
     "packages/*",
     "site"

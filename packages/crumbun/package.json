@@ -1,8 +1,14 @@
 {
   "name": "crumbun",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Tiny Bun fullstack engine with file routes, Pug templates, and static export.",
   "type": "module",
+  "homepage": "https://sekor.eu.org/crumbun/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skorotkiewicz/crumbun.git",
+    "directory": "packages/crumbun"
+  },
   "main": "./src/index.ts",
   "exports": {
     ".": {
@@ -28,7 +34,7 @@
     "router",
     "templates"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "bun": ">=1.0.0"
   },

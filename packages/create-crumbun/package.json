@@ -1,8 +1,14 @@
 {
   "name": "create-crumbun",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Create a tiny Bun fullstack app using crumbun, Pug, and static export.",
   "type": "module",
+  "homepage": "https://sekor.eu.org/crumbun/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skorotkiewicz/crumbun.git",
+    "directory": "packages/create-crumbun"
+  },
   "bin": {
     "create-crumbun": "src/index.ts"
   },
@@ -20,7 +26,7 @@
     "scaffold",
     "crumbun"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "bun": ">=1.0.0"
   },
