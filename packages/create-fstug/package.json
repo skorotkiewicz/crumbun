@@ -1,0 +1,8 @@
+{
+  "name": "create-fstug",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "create-fstug": "./src/index.ts"
+  }
+}

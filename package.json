@@ -1,0 +1,17 @@
+{
+  "name": "fstug-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "app"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd app dev",
+    "check": "bun test",
+    "create": "bun packages/create-fstug/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
