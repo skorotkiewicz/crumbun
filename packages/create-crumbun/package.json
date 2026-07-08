@@ -1,6 +1,6 @@
 {
   "name": "create-crumbun",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Create a tiny Bun fullstack app using crumbun, Pug, and static export.",
   "type": "module",
   "homepage": "https://sekor.eu.org/crumbun/",

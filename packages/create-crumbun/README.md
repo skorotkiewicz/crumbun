@@ -22,5 +22,6 @@ The generated app uses:
 - `src/api/**/page.ts` file routes
 - `[id]` dynamic params
 - Pug views in `src/views`
+- SCSS view assets compiled and served from `/_crumbun`
 - static files in `public`
 - static export to `dist`

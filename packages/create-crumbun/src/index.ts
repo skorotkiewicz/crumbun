@@ -90,7 +90,7 @@ To export static HTML:
 - src/export.ts exports static pages with crumbun.
 - src/api/**/page.ts creates routes.
 - src/views/**/*.pug contains Pug views.
-- src/views/**/*.css is served from /_crumbun.
+- src/views/**/*.scss is compiled and served from /_crumbun; plain .css also works.
 - src/views/_layout.pug (optional) wraps every view; emit the view with != content.
 - src/views/_error.pug (optional) renders 404 and error responses with status and message locals.
 - src/utils/ is for local app helpers and data.
@@ -125,8 +125,8 @@ Folder names in parentheses, such as src/api/(marketing)/about/page.ts, are rout
 ## Views
 
 - render("story/story") renders src/views/story/story.pug.
-- Link global CSS with /_crumbun/style.css.
-- Link nested view CSS with /_crumbun/story/story.css.
+- Link global SCSS with /_crumbun/style.css.
+- Link nested view SCSS with /_crumbun/story/story.css.
 - src/views/_layout.pug (optional) wraps every view; emit the view with != content.
 - src/views/_error.pug (optional) renders 404 and error responses with status and message locals.
 
@@ -134,7 +134,7 @@ Folder names in parentheses, such as src/api/(marketing)/about/page.ts, are rout
 
 - bun run build writes static files to dist/.
 - Keep paths in src/export.ts in sync with routes that should be pre-rendered.
-- Static export copies public/ and src/views/**/*.css automatically.
+- Static export copies public/, src/views/**/*.css, and compiled src/views/**/*.scss automatically.
 
 ## Working Here
 
@@ -224,7 +224,7 @@ section.panel.active
       span.lbl /story/quiet-console
       code Quiet Console
 `,
-    "src/views/style.css": `:root {
+    "src/views/style.scss": `:root {
   --bg: #0c0c0e;
   --fg: #c9c9c9;
   --mut: #6f6f78;
@@ -284,7 +284,7 @@ html(lang="en")
     main.shell
       != content
 `,
-    "src/views/_layout.css": `.shell,
+    "src/views/_layout.scss": `.shell,
 .shell-head,
 .shell-nav {
   max-width: 760px;
@@ -293,24 +293,24 @@ html(lang="en")
 
 .shell-head {
   padding: 52px 20px 10px;
-}
 
-.shell-head h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 
-.shell-head h1::before {
-  content: "~/ ";
-  color: var(--mut);
-}
+    &::before {
+      content: "~/ ";
+      color: var(--mut);
+    }
+  }
 
-.shell-head p {
-  margin: 8px 0 0;
-  color: var(--mut);
-  font-size: 13px;
+  p {
+    margin: 8px 0 0;
+    color: var(--mut);
+    font-size: 13px;
+  }
 }
 
 .shell-nav {
@@ -319,22 +319,22 @@ html(lang="en")
   gap: 20px;
   border-bottom: 1px solid var(--line);
   padding: 16px 20px;
-}
 
-.shell-nav a {
-  color: var(--mut);
-  font-size: 13px;
-}
+  a {
+    color: var(--mut);
+    font-size: 13px;
 
-.shell-nav a:hover,
-.shell-nav a:focus-visible,
-.shell-nav a.active {
-  color: var(--fg);
-}
+    &:hover,
+    &:focus-visible,
+    &.active {
+      color: var(--fg);
+    }
 
-.shell-nav a.active {
-  border-bottom: 1px solid var(--acc);
-  text-decoration: none;
+    &.active {
+      border-bottom: 1px solid var(--acc);
+      text-decoration: none;
+    }
+  }
 }
 
 .shell {
@@ -380,15 +380,15 @@ pre {
   padding: 9px 11px;
   color: var(--fg);
   font: inherit;
-}
 
-pre code {
-  display: block;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: inherit;
-  font: inherit;
+  code {
+    display: block;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+  }
 }
 
 .out {
@@ -403,10 +403,10 @@ pre code {
   gap: 12px;
   border-bottom: 1px solid var(--line);
   padding: 6px 0;
-}
 
-.row:last-child {
-  border-bottom: 0;
+  &:last-child {
+    border-bottom: 0;
+  }
 }
 
 .link-row {
@@ -468,26 +468,28 @@ pre code {
       span.lbl src/views/story/story.pug
       code render()
     div.row
-      span.rank css
-      span.lbl /_crumbun/story/story.css
-      code static
+      span.rank scss
+      span.lbl compiled stylesheet URL
+      code /_crumbun/story/story.css
   div.copy
     each paragraph in story.body
       p= paragraph
 `,
-    "src/views/story/story.css": `.story .copy {
-  display: grid;
-  gap: 12px;
-  margin-top: 20px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #111114;
-  padding: 14px;
-}
+    "src/views/story/story.scss": `.story {
+  .copy {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #111114;
+    padding: 14px;
 
-.story .copy p {
-  margin: 0;
-  color: var(--fg);
+    p {
+      margin: 0;
+      color: var(--fg);
+    }
+  }
 }
 `,
     "src/utils/corpus.js": `export const stories = [
@@ -498,7 +500,7 @@ pre code {
     lede: "A tiny route renders a Pug template with data from a local corpus.",
     body: [
       "The page module owns the request. The view owns the markup.",
-      "Static files come from public, view CSS comes from src/views through /_crumbun.",
+      "Static files come from public, view styles come from src/views through /_crumbun.",
     ],
   },
   {

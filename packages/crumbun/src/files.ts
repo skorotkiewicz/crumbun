@@ -1,8 +1,12 @@
+import { createHash } from "node:crypto";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { cp, mkdir, readdir } from "node:fs/promises";
 import type { Dirent } from "node:fs";
+import { compile } from "sass";
 
 const pageFile = /^page\.(ts|js|mjs|tsx|jsx)$/;
+const cssFile = /\.css$/;
+const scssFile = /\.scss$/;
 
 export function safePath(root: string, pathname: string) {
   let decoded: string;
@@ -39,8 +43,31 @@ export async function fileResponse(root: string, pathname: string, request?: Req
 }
 
 export async function viewAssetResponse(viewsDir: string, pathname: string, request?: Request) {
-  if (!pathname.startsWith("/_crumbun/") || !pathname.endsWith(".css")) return null;
-  return fileResponse(viewsDir, pathname.slice("/_crumbun/".length), request);
+  if (!pathname.startsWith("/_crumbun/") || !cssFile.test(pathname)) return null;
+
+  const cssName = pathname.slice("/_crumbun/".length);
+  const cssPath = safePath(viewsDir, cssName);
+  if (cssPath && (await Bun.file(cssPath).exists())) return fileResponse(viewsDir, cssName, request);
+
+  const scssPath = safePath(viewsDir, cssName.replace(cssFile, ".scss"));
+  if (!scssPath) return null;
+
+  const file = Bun.file(scssPath);
+  if (!(await file.exists())) return null;
+
+  const css = compileScss(scssPath);
+  const etag = `"scss-${createHash("sha1").update(css).digest("hex")}"`;
+  const headers = new Headers({
+    "cache-control": "public, max-age=3600",
+    "content-type": "text/css; charset=utf-8",
+    etag,
+  });
+
+  if (request?.headers.get("if-none-match") === etag) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  return new Response(css, { headers });
 }
 
 export async function findFiles(dir: string, matches: (name: string) => boolean): Promise<string[]> {
@@ -81,10 +108,23 @@ export async function copyIfExists(from: string, to: string) {
 }
 
 export async function copyViewStyles(viewsDir: string, outDir: string) {
-  for (const file of await findFiles(viewsDir, (name) => name.endsWith(".css"))) {
-    const outputPath = join(outDir, relative(viewsDir, file));
+  const written = new Set<string>();
+
+  for (const file of await findFiles(viewsDir, (name) => cssFile.test(name))) {
+    const name = relative(viewsDir, file);
+    const outputPath = join(outDir, name);
     await mkdir(dirname(outputPath), { recursive: true });
     await cp(file, outputPath);
+    written.add(name);
+  }
+
+  for (const file of await findFiles(viewsDir, (name) => scssFile.test(name))) {
+    const name = relative(viewsDir, file).replace(scssFile, ".css");
+    if (written.has(name)) continue;
+
+    const outputPath = join(outDir, name);
+    await mkdir(dirname(outputPath), { recursive: true });
+    await Bun.write(outputPath, compileScss(file));
   }
 }
 
@@ -124,4 +164,9 @@ function contentType(path: string) {
 
 function isNotFound(error: unknown) {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
+function compileScss(file: string) {
+  const css = compile(file, { style: "expanded" }).css.trim();
+  return css ? `${css}\n` : "";
 }

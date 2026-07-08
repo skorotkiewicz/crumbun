@@ -35,7 +35,7 @@ export function GET({ params, render }: PageContext) {
 
 Views live in `src/views`. `render("story/story")` renders `src/views/story/story.pug`.
 
-CSS in `src/views` is served from `/_crumbun`, so `src/views/story/story.css` is available at `/_crumbun/story/story.css`. crumbun also serves a default highlight theme at `/_crumbun/highlight.css`.
+CSS and SCSS in `src/views` are served from `/_crumbun`, so `src/views/story/story.css` and `src/views/story/story.scss` are both available at `/_crumbun/story/story.css`. crumbun also serves a default highlight theme at `/_crumbun/highlight.css`.
 
 ## Layouts and error pages
 
@@ -89,7 +89,7 @@ await exportStatic({
 });
 ```
 
-`exportStatic` writes to `dist` by default. It renders the listed paths, copies `public`, copies `src/views/**/*.css` to `/_crumbun`, copies the default highlight theme to `/_crumbun/highlight.css`, and writes `.nojekyll` for GitHub Pages.
+`exportStatic` writes to `dist` by default. It renders the listed paths, copies `public`, copies `src/views/**/*.css` and compiled `src/views/**/*.scss` to `/_crumbun`, copies the default highlight theme to `/_crumbun/highlight.css`, and writes `.nojekyll` for GitHub Pages.
 
 ## Route groups
 

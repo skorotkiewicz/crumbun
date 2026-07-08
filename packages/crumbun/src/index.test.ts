@@ -232,6 +232,51 @@ test("serves static assets with etag and 304", async () => {
   expect(second.status).toBe(304);
 });
 
+test("serves and exports view scss as css", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-scss-"));
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+  await writeFile(join(root, "src/views/vars.scss"), "$accent: #c33;\n");
+  await writeFile(
+    join(root, "src/views/_layout.scss"),
+    '@use "vars" as *;\n.card {\n  color: $accent;\n  &:hover { color: white; }\n}\n',
+  );
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/_crumbun/_layout.css"));
+  const etag = response.headers.get("etag") ?? "";
+  const css = await response.text();
+
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toContain("text/css");
+  expect(css).toContain(".card {");
+  expect(css).toContain("color: #c33;");
+  expect(css).toContain(".card:hover {");
+  expect(etag).not.toBe("");
+  expect((await app.fetch(new Request("http://crumbun.test/_crumbun/_layout.css", { headers: { "if-none-match": etag } }))).status).toBe(304);
+
+  await exportStatic({ root, paths: ["/"] });
+
+  expect(await Bun.file(join(root, "dist/_crumbun/_layout.css")).text()).toContain(".card:hover");
+});
+
+test("plain css wins when css and scss share a view asset path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-css-wins-"));
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+  await writeFile(join(root, "src/views/theme.css"), "body { color: red; }\n");
+  await writeFile(join(root, "src/views/theme.scss"), "body { color: blue; }\n");
+
+  const app = await createApp({ root });
+  const response = await app.fetch(new Request("http://crumbun.test/_crumbun/theme.css"));
+
+  expect(await response.text()).toBe("body { color: red; }\n");
+
+  await exportStatic({ root, paths: ["/"] });
+
+  expect(await Bun.file(join(root, "dist/_crumbun/theme.css")).text()).toBe("body { color: red; }\n");
+});
+
 test("HEAD responses keep headers without bodies", async () => {
   const root = await mkdtemp(join(tmpdir(), "crumbun-head-"));
   await mkdir(join(root, "src/api/ping"), { recursive: true });
