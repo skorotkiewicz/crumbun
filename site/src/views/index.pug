@@ -4,123 +4,143 @@ html(lang="en")
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1")
     meta(name="description" content="crumbun is a tiny Bun fullstack engine with file routes and Pug templates.")
-    title crumbun
+    title crumbun · Bun + Pug
     link(rel="icon" href="/favicon.svg")
     link(rel="preload" as="image" href="/crumbun-board.png")
     link(rel="stylesheet" href="/_crumbun/style.css")
   body
-    header.topbar
-      a.brand(href="#top" aria-label="crumbun home")
-        span.brand-mark c
-        span crumbun
-      nav.nav(aria-label="Main")
-        a(href="#start") Start
-        a(href="#shape") Shape
-        a(href="#api") API
-        a(href="#publish") Publish
-    main#top
-      section.hero
-        img.hero-art(src="/crumbun-board.png" alt="")
-        div.hero-copy
-          p.kicker Bun + Pug + file routes
-          h1 crumbun
-          p.lede A tiny fullstack engine for apps that want server routes, Pug views, and almost nothing else.
-          div.actions
-            a.button.primary(href="#start") Get started
-            a.button.secondary(href="#shape") See the shape
-          pre.command
-            code bunx create-crumbun my-app
-        div.scroll-hint(aria-hidden="true") ↓
+    header
+      h1 crumbun
+      p tiny Bun fullstack engine · file routes · Pug views · no framework ceremony
+      p.links
+        a(href="https://www.npmjs.com/package/crumbun") npm: crumbun
+        a(href="https://www.npmjs.com/package/create-crumbun") bunx create-crumbun
 
-      section#start.band
-        div.section-head
-          p.kicker Start
-          h2 One command, one server file.
-          p Create an app, install packages, and run Bun directly.
-        div.quick-grid
-          article.step
-            span.step-num 01
-            h3 Scaffold
-            pre
-              code bunx create-crumbun my-app
-          article.step
-            span.step-num 02
-            h3 Run
+    nav#tabs(aria-label="crumbun sections")
+      button.active(type="button" data-tab="start") Start
+      button(type="button" data-tab="routes") Routes
+      button(type="button" data-tab="views") Views
+      button(type="button" data-tab="handler") Handler
+
+    main
+      section.panel.active(data-panel="start")
+        h2 Start
+        p.hint Create a crumbun app, install packages, run Bun. The generated server is one file.
+        label Command
+        pre
+          code.
+            bunx create-crumbun my-app
+            cd my-app
+            bun install
+            bun run dev
+        div.out
+          div.row
+            span.rank 01
+            span.lbl engine
+            code crumbun
+          div.row
+            span.rank 02
+            span.lbl scaffold CLI
+            code create-crumbun
+          div.row
+            span.rank 03
+            span.lbl runtime
+            code Bun.serve()
+
+      section.panel(data-panel="routes")
+        h2 Routes
+        p.hint `src/api/**/page.ts` creates routes. Bracket folders become URL params.
+        div.grid2
+          div
+            label File
             pre
               code.
-                cd my-app
-                bun install
-                bun run dev
-          article.step
-            span.step-num 03
-            h3 Ship the boring parts
-            p Routes live in files. Views stay in Pug. Static files stay in public.
-
-      section#shape.surface
-        div.section-head
-          p.kicker Shape
-          h2 The filesystem is the map.
-          p Bracket folders become params. Page files export HTTP handlers.
-        div.shape-grid
-          pre.file-tree
-            code.
-              public/
-                favicon.svg
-              src/
-                api/
-                  story/
-                    [id]/
-                      page.ts
-                      getstory.ts
-                views/
-                  story/
-                    story.pug
-                    story.css
-                  index.pug
-                  style.css
-          div.route-table
-            div.route-row
-              span file
-              code src/api/story/[id]/page.ts
-            div.route-row
-              span route
+                src/api/story/[id]/page.ts
+          div
+            label Route
+            pre
               code /story/:id
-            div.route-row
-              span view
-              code render("story/story")
-            div.route-row
-              span css
-              code /_crumbun/story/story.css
+        div.out
+          div.row
+            span.rank GET
+            span.lbl export a GET handler
+            code GET({ params })
+          div.row
+            span.rank POST
+            span.lbl export any HTTP method
+            code POST({ request })
+          div.row
+            span.rank root
+            span.lbl no matching route renders
+            code src/views/index.pug
+        img.preview(src="/crumbun-board.png" alt="crumbun route and view diagram")
 
-      section#api.band
-        div.section-head
-          p.kicker API
-          h2 Handlers return web responses or plain values.
-          p Use the platform first. crumbun only fills the routing and rendering gap.
-        div.code-pair
-          pre
-            code.
-              import type { PageContext } from "crumbun";
+      section.panel(data-panel="views")
+        h2 Views
+        p.hint Pug files live in `src/views`. CSS next to views is served from `/_crumbun`.
+        label View tree
+        pre
+          code.
+            src/views/
+              layout/
+                layout.pug
+                layout.css
+              story/
+                story.pug
+                story.css
+              index.pug
+              style.css
+        div.out
+          div.row
+            span.rank pug
+            span.lbl render a view
+            code render("story/story")
+          div.row
+            span.rank css
+            span.lbl view stylesheet URL
+            code /_crumbun/story/story.css
+          div.row
+            span.rank pub
+            span.lbl public assets
+            code /favicon.svg
 
-              export async function GET({ params, render }: PageContext) {
-                return render("story/story", {
-                  title: `Story ${params.id}`,
-                });
-              }
-          ul.api-list
-            li #[code request] is the incoming Request.
-            li #[code params] comes from bracket folders.
-            li #[code render()] resolves Pug files in src/views.
-            li Return #[code Response], strings, objects, or nothing.
+      section.panel(data-panel="handler")
+        h2 Handler
+        p.hint Handlers receive a tiny context and return Web responses or plain values.
+        label page.ts
+        pre
+          code.
+            import type { PageContext } from "crumbun";
 
-      section#publish.closing
-        p.kicker Publish
-        h2 Small enough to read before lunch.
-        p crumbun ships as the engine plus a scaffold CLI. No hidden dev server, no client build pipeline, no framework ceremony.
-        div.actions
-          a.button.primary(href="https://www.npmjs.com/package/crumbun") npm: crumbun
-          a.button.secondary(href="https://www.npmjs.com/package/create-crumbun") npm: create-crumbun
+            export async function GET({ params, render }: PageContext) {
+              return render("story/story", {
+                title: `Story ${params.id}`,
+              });
+            }
+        div.out
+          div.row
+            span.rank req
+            span.lbl incoming request
+            code request
+          div.row
+            span.rank url
+            span.lbl parsed URL
+            code url
+          div.row
+            span.rank data
+            span.lbl return JSON
+            code json(value)
+          div.row
+            span.rank 204
+            span.lbl return empty response
+            code null
 
-    footer.footer
-      span crumbun
-      span Bun fullstack, kept small.
+    script.
+      document.querySelectorAll("#tabs button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("#tabs button").forEach((item) => item.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+          button.classList.add("active");
+          document.querySelector(`[data-panel="${button.dataset.tab}"]`).classList.add("active");
+        });
+      });
