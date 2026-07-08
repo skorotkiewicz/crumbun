@@ -9,6 +9,10 @@ test("turns file routes into URL patterns", () => {
   expect(matchPattern("/story/:id", "/story/42")).toEqual({ id: "42" });
 });
 
+test("malformed route params do not throw", () => {
+  expect(matchPattern("/story/:id", "/story/%E0%A4%A")).toBeNull();
+});
+
 test("serves dynamic page modules", async () => {
   const root = await mkdtemp(join(tmpdir(), "crumbun-"));
   const routeDir = join(root, "src/api/story/[id]");
@@ -48,6 +52,19 @@ test("highlights rich token categories", () => {
 test("highlights booleans and shell comments", () => {
   expect(highlightCode("return true;", "ts")).toContain('<span class="cb-boolean">true</span>');
   expect(highlightCode("echo hi # run", "sh")).toContain('<span class="cb-comment"># run</span>');
+});
+
+test("highlights type hints, object keys, regexes, and shell tokens", () => {
+  const ts = highlightCode('const out = { title: /story\\/[a-z]+/i }; const cast = value as localType; console.log(out);', "ts");
+  const sh = highlightCode("bun run dev --hot $PORT # run", "sh");
+
+  expect(ts).toContain('<span class="cb-property">title</span>');
+  expect(ts).toContain('<span class="cb-regex">/story\\/[a-z]+/i</span>');
+  expect(ts).toContain('<span class="cb-type">localType</span>');
+  expect(ts).toContain('<span class="cb-property">log</span>');
+  expect(sh).toContain('<span class="cb-builtin">bun</span>');
+  expect(sh).toContain('<span class="cb-property">--hot</span>');
+  expect(sh).toContain('<span class="cb-variable">$PORT</span>');
 });
 
 test("serves builtin highlight stylesheet", async () => {
@@ -211,4 +228,3 @@ test("spa fallback renders index for unknown GETs", async () => {
   expect(response.status).toBe(200);
   expect(await response.text()).toContain("App");
 });
-

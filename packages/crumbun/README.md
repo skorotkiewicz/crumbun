@@ -75,7 +75,7 @@ pre
   code.language-ts!= highlightCode("export const app = serve()", "ts")
 ```
 
-It returns escaped HTML with `cb-keyword`, `cb-builtin`, `cb-string`, `cb-number`, `cb-boolean`, `cb-function`, `cb-type`, `cb-property`, `cb-operator`, `cb-punct`, `cb-decorator`, and `cb-comment` spans for styling. Link `/_crumbun/highlight.css` for the default theme.
+It returns escaped HTML with `cb-keyword`, `cb-builtin`, `cb-string`, `cb-regex`, `cb-number`, `cb-boolean`, `cb-function`, `cb-type`, `cb-property`, `cb-variable`, `cb-operator`, `cb-punct`, `cb-decorator`, and `cb-comment` spans for styling. Link `/_crumbun/highlight.css` for the default theme.
 
 ## Static Export
 

@@ -26,7 +26,11 @@ export function matchPattern(pattern: string, pathname: string) {
     if (patternPart === undefined || pathPart === undefined) return null;
 
     if (patternPart.startsWith(":")) {
-      params[patternPart.slice(1)] = decodeURIComponent(pathPart);
+      try {
+        params[patternPart.slice(1)] = decodeURIComponent(pathPart);
+      } catch {
+        return null;
+      }
     } else if (patternPart !== pathPart) {
       return null;
     }
