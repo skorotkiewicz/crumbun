@@ -172,26 +172,6 @@ pre code {
   font: inherit;
 }
 
-.cb-keyword {
-  color: #7aa2f7;
-}
-
-.cb-builtin {
-  color: #e0af68;
-}
-
-.cb-string {
-  color: #9ece6a;
-}
-
-.cb-number {
-  color: #ff9e64;
-}
-
-.cb-comment {
-  color: #6f6f78;
-}
-
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

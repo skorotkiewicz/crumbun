@@ -35,6 +35,43 @@ test("highlights and escapes code", () => {
   expect(html).not.toContain("<script>");
 });
 
+test("highlights rich token categories", () => {
+  const html = highlightCode('const ok = GET({ id }: Story);', "ts");
+
+  expect(html).toContain('<span class="cb-keyword">const</span>');
+  expect(html).toContain('<span class="cb-function">GET</span>');
+  expect(html).toContain('<span class="cb-type">Story</span>');
+  expect(html).toContain('<span class="cb-operator">:</span>');
+  expect(html).toContain('<span class="cb-punct">;</span>');
+});
+
+test("highlights booleans and shell comments", () => {
+  expect(highlightCode("return true;", "ts")).toContain('<span class="cb-boolean">true</span>');
+  expect(highlightCode("echo hi # run", "sh")).toContain('<span class="cb-comment"># run</span>');
+});
+
+test("serves builtin highlight stylesheet", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-theme-"));
+  const app = await createApp({ root });
+
+  const response = await app.fetch(new Request("http://crumbun.test/_crumbun/highlight.css"));
+
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toContain("text/css");
+  expect(await response.text()).toContain(".cb-type");
+});
+
+test("exports builtin highlight stylesheet", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crumbun-static-"));
+  await mkdir(join(root, "public"), { recursive: true });
+  await mkdir(join(root, "src/views"), { recursive: true });
+  await writeFile(join(root, "src/views/index.pug"), "h1 Home\n");
+
+  await exportStatic({ root, paths: ["/"] });
+
+  expect(await Bun.file(join(root, "dist/_crumbun/highlight.css")).text()).toContain(".cb-type");
+});
+
 test("exposes code highlighting to views", async () => {
   const root = await mkdtemp(join(tmpdir(), "crumbun-highlight-"));
 

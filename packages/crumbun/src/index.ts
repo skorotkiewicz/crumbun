@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { mkdir, rm } from "node:fs/promises";
-import { highlightCode } from "./highlight";
+import { highlightCode, highlightCss } from "./highlight";
 import {
   copyIfExists,
   copyViewStyles,
@@ -77,6 +77,12 @@ export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunAp
       const viewAsset = await viewAssetResponse(viewsDir, url.pathname);
       if (viewAsset) return viewAsset;
 
+      if (url.pathname === "/_crumbun/highlight.css") {
+        return new Response(highlightCss, {
+          headers: { "content-type": "text/css; charset=utf-8" },
+        });
+      }
+
       if (url.pathname !== "/") {
         const publicFile = await fileResponse(publicDir, url.pathname);
         if (publicFile) return publicFile;
@@ -129,6 +135,7 @@ export async function exportStatic(options: StaticExportOptions = {}): Promise<S
   const app = await createApp({ root, development: options.development });
   await mkdir(outDir, { recursive: true });
   await copyIfExists(resolve(root, "public"), outDir);
+  await Bun.write(join(outDir, "_crumbun/highlight.css"), highlightCss);
   await copyViewStyles(resolve(root, "src/views"), join(outDir, "_crumbun"));
   await Bun.write(join(outDir, ".nojekyll"), "");
 
