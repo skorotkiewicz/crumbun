@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 const target = resolve(Bun.argv[2] ?? "app");
 const appName = packageName(basename(target));
-const fstugDependency = "^0.1.0";
+const crumbunDependency = "^0.1.0";
 
 if (await isNonEmptyDir(target)) {
   console.error(`Refusing to overwrite non-empty directory: ${target}`);
@@ -31,7 +31,7 @@ async function isNonEmptyDir(path: string) {
 }
 
 function packageName(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "fstug-app";
+  return name.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "crumbun-app";
 }
 
 function files(name: string) {
@@ -46,7 +46,7 @@ function files(name: string) {
           start: "bun src/server.ts",
         },
         dependencies: {
-          fstug: fstugDependency,
+          crumbun: crumbunDependency,
         },
       },
       null,
@@ -54,15 +54,15 @@ function files(name: string) {
     )}\n`,
     "public/favicon.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#111827"/><path fill="#f59e0b" d="M16 17h32v8H26v7h18v8H26v15H16z"/></svg>\n`,
     "src/server.ts": `import { fileURLToPath } from "node:url";
-import { serve } from "fstug";
+import { serve } from "crumbun";
 
 const server = await serve({
   root: fileURLToPath(new URL("..", import.meta.url)),
 });
 
-console.log(\`Fstug running at http://\${server.hostname}:\${server.port}\`);
+console.log(\`Crumbun running at http://\${server.hostname}:\${server.port}\`);
 `,
-    "src/api/story/[id]/page.ts": `import type { PageContext } from "fstug";
+    "src/api/story/[id]/page.ts": `import type { PageContext } from "crumbun";
 import { getStory } from "./getstory";
 
 export async function GET({ params, render }: PageContext) {
@@ -86,7 +86,7 @@ export function getStory(id: string) {
 
 block content
   section.intro
-    p.kicker Fstug
+    p.kicker Crumbun
     h1 Small Bun fullstack app with Pug views.
     p Pick a story route rendered by src/api/story/[id]/page.ts.
     nav.story-links(aria-label="Stories")
@@ -117,10 +117,10 @@ html(lang="en")
   head
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1")
-    title= title || "Fstug"
+    title= title || "Crumbun"
     link(rel="icon" href="/favicon.svg")
-    link(rel="stylesheet" href="/_fstug/style.css")
-    link(rel="stylesheet" href="/_fstug/layout/layout.css")
+    link(rel="stylesheet" href="/_crumbun/style.css")
+    link(rel="stylesheet" href="/_crumbun/layout/layout.css")
     block head
   body
     main.shell
@@ -164,7 +164,7 @@ p {
     "src/views/story/story.pug": `extends ../layout/layout.pug
 
 block head
-  link(rel="stylesheet" href="/_fstug/story/story.css")
+  link(rel="stylesheet" href="/_crumbun/story/story.css")
 
 block content
   article.story
@@ -209,7 +209,7 @@ block content
     lede: "A tiny route renders a Pug template with data from a local corpus.",
     body: [
       "The page module owns the request. The view owns the markup.",
-      "Static files come from public, view CSS comes from src/views through /_fstug.",
+      "Static files come from public, view CSS comes from src/views through /_crumbun.",
     ],
   },
   {

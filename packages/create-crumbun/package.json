@@ -1,10 +1,10 @@
 {
-  "name": "create-fstug",
+  "name": "create-crumbun",
   "version": "0.1.0",
-  "description": "Create a tiny Bun fullstack app using fstug and Pug.",
+  "description": "Create a tiny Bun fullstack app using crumbun and Pug.",
   "type": "module",
   "bin": {
-    "create-fstug": "src/index.ts"
+    "create-crumbun": "src/index.ts"
   },
   "files": [
     "src/index.ts",
@@ -18,7 +18,7 @@
     "pug",
     "starter",
     "scaffold",
-    "fstug"
+    "crumbun"
   ],
   "license": "UNLICENSED",
   "engines": {

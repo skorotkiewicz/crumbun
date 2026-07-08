@@ -1,5 +1,5 @@
 {
-  "name": "fstug",
+  "name": "crumbun",
   "version": "0.1.0",
   "description": "Tiny Bun fullstack engine with file routes and Pug templates.",
   "type": "module",

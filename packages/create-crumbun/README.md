@@ -1,11 +1,11 @@
-# create-fstug
+# create-crumbun
 
-Create a tiny Bun fullstack app using `fstug` and Pug.
+Create a tiny Bun fullstack app using `crumbun` and Pug.
 
 ## Use
 
 ```bash
-bunx create-fstug my-app
+bunx create-crumbun my-app
 cd my-app
 bun install
 bun run dev

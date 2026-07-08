@@ -3,27 +3,21 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "fstug",
+      "name": "crumbun-workspace",
       "devDependencies": {
         "@types/bun": "latest",
       },
     },
-    "app": {
-      "name": "fstug-story-app",
-      "dependencies": {
-        "fstug": "workspace:*",
-      },
-    },
-    "packages/create-fstug": {
-      "name": "create-fstug",
-      "version": "0.0.0",
+    "packages/create-crumbun": {
+      "name": "create-crumbun",
+      "version": "0.1.0",
       "bin": {
-        "create-fstug": "./src/index.ts",
+        "create-crumbun": "src/index.ts",
       },
     },
-    "packages/fstug": {
-      "name": "fstug",
-      "version": "0.0.0",
+    "packages/crumbun": {
+      "name": "crumbun",
+      "version": "0.1.0",
       "dependencies": {
         "pug": "^3.0.4",
       },
@@ -60,7 +54,9 @@
 
     "constantinople": ["constantinople@4.0.1", "", { "dependencies": { "@babel/parser": "^7.6.0", "@babel/types": "^7.6.1" } }, "sha512-vCrqcSIq4//Gx74TXXCGnHpulY1dskqLTFGDmhrGxzeXL8lF8kvXv6mpNWlJj1uD4DW23D4ljAqbY4RRaaUZIw=="],
 
-    "create-fstug": ["create-fstug@workspace:packages/create-fstug"],
+    "create-crumbun": ["create-crumbun@workspace:packages/create-crumbun"],
+
+    "crumbun": ["crumbun@workspace:packages/crumbun"],
 
     "doctypes": ["doctypes@1.1.0", "", {}, "sha512-LLBi6pEqS6Do3EKQ3J0NqHWV5hhb78Pi8vvESYwyOy2c31ZEZVdtitdzsQsKb7878PEERhzUk0ftqGhG6Mz+pQ=="],
 
@@ -71,10 +67,6 @@
     "es-errors": ["es-errors@1.3.0", "", {}, "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw=="],
 
     "es-object-atoms": ["es-object-atoms@1.1.2", "", { "dependencies": { "es-errors": "^1.3.0" } }, "sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw=="],
-
-    "fstug": ["fstug@workspace:packages/fstug"],
-
-    "fstug-story-app": ["fstug-story-app@workspace:app"],
 
     "function-bind": ["function-bind@1.1.2", "", {}, "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="],
 

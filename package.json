@@ -1,15 +1,13 @@
 {
-  "name": "fstug-workspace",
+  "name": "crumbun-workspace",
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "app"
+    "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --cwd app dev",
     "check": "bun test",
-    "create": "bun packages/create-fstug/src/index.ts"
+    "create": "bun packages/create-crumbun/src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

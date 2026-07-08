@@ -10,7 +10,7 @@ test("turns file routes into URL patterns", () => {
 });
 
 test("serves dynamic page modules", async () => {
-  const root = await mkdtemp(join(tmpdir(), "fstug-"));
+  const root = await mkdtemp(join(tmpdir(), "crumbun-"));
   const routeDir = join(root, "src/api/story/[id]");
 
   await mkdir(routeDir, { recursive: true });
@@ -20,7 +20,7 @@ test("serves dynamic page modules", async () => {
   );
 
   const app = await createApp({ root });
-  const response = await app.fetch(new Request("http://fstug.test/story/abc"));
+  const response = await app.fetch(new Request("http://crumbun.test/story/abc"));
 
   expect(response.status).toBe(200);
   expect(await response.text()).toBe("story:abc");

@@ -24,7 +24,7 @@ export type PageContext = {
   json: (value: unknown, init?: ResponseInit) => Response;
 };
 
-export type FstugOptions = {
+export type CrumbunOptions = {
   root?: string;
   port?: number;
   hostname?: string;
@@ -41,12 +41,12 @@ type Route = {
   dynamicCount: number;
 };
 
-type FstugApp = {
+type CrumbunApp = {
   root: string;
   fetch: (request: Request) => Promise<Response>;
 };
 
-export async function serve(options: FstugOptions = {}) {
+export async function serve(options: CrumbunOptions = {}) {
   const app = await createApp(options);
 
   return Bun.serve({
@@ -56,7 +56,7 @@ export async function serve(options: FstugOptions = {}) {
   });
 }
 
-export async function createApp(options: FstugOptions = {}): Promise<FstugApp> {
+export async function createApp(options: CrumbunOptions = {}): Promise<CrumbunApp> {
   const root = resolve(options.root ?? process.cwd());
   const publicDir = resolve(root, "public");
   const srcDir = resolve(root, "src");
@@ -208,8 +208,8 @@ async function findPages(dir: string): Promise<string[]> {
 }
 
 async function viewAssetResponse(viewsDir: string, pathname: string) {
-  if (!pathname.startsWith("/_fstug/") || !pathname.endsWith(".css")) return null;
-  return fileResponse(viewsDir, pathname.slice("/_fstug/".length));
+  if (!pathname.startsWith("/_crumbun/") || !pathname.endsWith(".css")) return null;
+  return fileResponse(viewsDir, pathname.slice("/_crumbun/".length));
 }
 
 async function fileResponse(root: string, pathname: string) {
