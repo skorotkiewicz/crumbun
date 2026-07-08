@@ -30,3 +30,9 @@ bunx create-crumbun my-app
 The engine maps `src/api/**/page.ts` to routes. A folder named `[id]` becomes a URL param, so `src/api/story/[id]/page.ts` handles `/story/:id`.
 
 Views live in `src/views`. Use `render("story/story", locals)` from a page module to render `src/views/story/story.pug`.
+
+## Website
+
+```bash
+bun run site
+```

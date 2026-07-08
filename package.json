@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "site"
   ],
   "scripts": {
     "check": "bun test",
-    "create": "bun packages/create-crumbun/src/index.ts"
+    "create": "bun packages/create-crumbun/src/index.ts",
+    "site": "bun run --cwd site dev"
   },
   "devDependencies": {
     "@types/bun": "latest"
