@@ -127,7 +127,8 @@ Folder names in parentheses, such as src/api/(marketing)/about/page.ts, are rout
 - render("story/story") renders src/views/story/story.pug.
 - Link global CSS with /_crumbun/style.css.
 - Link nested view CSS with /_crumbun/story/story.css.
-- Keep layout markup in src/views/layout/layout.pug.
+- src/views/_layout.pug (optional) wraps every view; emit the view with != content.
+- src/views/_error.pug (optional) renders 404 and error responses with status and message locals.
 
 ## Static Export
 
@@ -173,6 +174,7 @@ export async function GET({ params, render }: PageContext) {
   return render("story/story", {
     title: story.title,
     story,
+    active: story.id,
   });
 }
 `,
@@ -182,53 +184,45 @@ export function getStory(id: string) {
   return stories.find((story) => story.id === id);
 }
 `,
-    "src/views/index.pug": `extends layout/layout.pug
+    "src/views/index.pug": `section.panel.active
+  h2 Start
+  p.hint This page is rendered from src/views/index.pug. Story pages are handled by src/api/story/[id]/page.ts.
+  label Command
+  pre
+    code.
+      bun run dev
+      bun run build
+      open /story/first-light
+  div.out
+    div.row
+      span.rank 01
+      span.lbl engine
+      code crumbun
+    div.row
+      span.rank 02
+      span.lbl routes
+      code src/api/**/page.ts
+    div.row
+      span.rank 03
+      span.lbl static
+      code exportStatic()
+    div.row
+      span.rank 04
+      span.lbl views
+      code src/views/**/*.pug
 
-block nav
-  a.active(href="/") Start
-  a(href="/story/first-light") First Light
-  a(href="/story/quiet-console") Quiet Console
-
-block content
-  section.panel.active
-    h2 Start
-    p.hint This page is rendered from src/views/index.pug. Story pages are handled by src/api/story/[id]/page.ts.
-    label Command
-    pre
-      code.
-        bun run dev
-        bun run build
-        open /story/first-light
-    div.out
-      div.row
-        span.rank 01
-        span.lbl engine
-        code crumbun
-      div.row
-        span.rank 02
-        span.lbl routes
-        code src/api/**/page.ts
-      div.row
-        span.rank 03
-        span.lbl static
-        code exportStatic()
-      div.row
-        span.rank 04
-        span.lbl views
-        code src/views/**/*.pug
-
-  section.panel.active
-    h2 Stories
-    p.hint Pick a route rendered by a page handler and a Pug view.
-    div.out
-      a.row.link-row(href="/story/first-light")
-        span.rank GET
-        span.lbl /story/first-light
-        code First Light
-      a.row.link-row(href="/story/quiet-console")
-        span.rank GET
-        span.lbl /story/quiet-console
-        code Quiet Console
+section.panel.active
+  h2 Stories
+  p.hint Pick a route rendered by a page handler and a Pug view.
+  div.out
+    a.row.link-row(href="/story/first-light")
+      span.rank GET
+      span.lbl /story/first-light
+      code First Light
+    a.row.link-row(href="/story/quiet-console")
+      span.rank GET
+      span.lbl /story/quiet-console
+      code Quiet Console
 `,
     "src/views/style.css": `:root {
   --bg: #0c0c0e;
@@ -270,7 +264,7 @@ code {
   font-size: 12px;
 }
 `,
-    "src/views/layout/layout.pug": `doctype html
+    "src/views/_layout.pug": `doctype html
 html(lang="en")
   head
     meta(charset="utf-8")
@@ -278,19 +272,19 @@ html(lang="en")
     title= title || "Crumbun"
     link(rel="icon" href="/favicon.svg")
     link(rel="stylesheet" href="/_crumbun/style.css")
-    link(rel="stylesheet" href="/_crumbun/layout/layout.css")
-    block head
+    link(rel="stylesheet" href="/_crumbun/_layout.css")
   body
     header.shell-head
       h1 crumbun
       p tiny Bun app · file routes · Pug views
     nav.shell-nav(aria-label="App")
-      block nav
-        a(href="/") Start
+      a(class=active === "start" ? "active" : "" href="/") Start
+      a(class=active === "first-light" ? "active" : "" href="/story/first-light") First Light
+      a(class=active === "quiet-console" ? "active" : "" href="/story/quiet-console") Quiet Console
     main.shell
-      block content
+      != content
 `,
-    "src/views/layout/layout.css": `.shell,
+    "src/views/_layout.css": `.shell,
 .shell-head,
 .shell-nav {
   max-width: 760px;
@@ -457,39 +451,29 @@ pre code {
   }
 }
 `,
-    "src/views/story/story.pug": `extends ../layout/layout.pug
-
-block nav
-  a(href="/") Start
-  a(class=story.id === "first-light" ? "active" : "" href="/story/first-light") First Light
-  a(class=story.id === "quiet-console" ? "active" : "" href="/story/quiet-console") Quiet Console
-
-block head
+    "src/views/story/story.pug": `article.panel.story
   link(rel="stylesheet" href="/_crumbun/story/story.css")
-
-block content
-  article.panel.story
-    h2= story.title
-    p.hint= story.lede
-    label Route
-    pre
-      code= "/story/" + story.id
-    div.out
-      div.row
-        span.rank tag
-        span.lbl= story.tag
-        code story
-      div.row
-        span.rank view
-        span.lbl src/views/story/story.pug
-        code render()
-      div.row
-        span.rank css
-        span.lbl /_crumbun/story/story.css
-        code static
-    div.copy
-      each paragraph in story.body
-        p= paragraph
+  h2= story.title
+  p.hint= story.lede
+  label Route
+  pre
+    code= "/story/" + story.id
+  div.out
+    div.row
+      span.rank tag
+      span.lbl= story.tag
+      code story
+    div.row
+      span.rank view
+      span.lbl src/views/story/story.pug
+      code render()
+    div.row
+      span.rank css
+      span.lbl /_crumbun/story/story.css
+      code static
+  div.copy
+    each paragraph in story.body
+      p= paragraph
 `,
     "src/views/story/story.css": `.story .copy {
   display: grid;
