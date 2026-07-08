@@ -1,6 +1,6 @@
 {
   "name": "crumbun",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Tiny Bun fullstack engine with file routes, Pug templates, and static export.",
   "type": "module",
   "homepage": "https://sekor.eu.org/crumbun/",
