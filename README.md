@@ -24,7 +24,7 @@ bun run create my-app
 Or:
 
 ```bash
-bunx create-crumbun my-app
+bunx create-crumbun@latest my-app
 ```
 
 The engine maps `src/api/**/page.ts` to routes. A folder named `[id]` becomes a URL param, so `src/api/story/[id]/page.ts` handles `/story/:id`.
