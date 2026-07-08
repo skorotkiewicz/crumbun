@@ -122,7 +122,7 @@ Views and assets:
 ## Working On The CLI
 
 - `packages/create-crumbun/src/index.ts` embeds the starter app as strings.
-- Generated apps should depend on `"crumbun": "^0.1.0"` unless deliberately preparing a local-only dev flow.
+- Generated apps should depend on the current published `crumbun` version unless deliberately preparing a local-only dev flow.
 - Keep the scaffold boring: `public`, `src/api`, `src/views`, and `src/utils`.
 - Verify CLI changes by scaffolding into `/tmp` and inspecting the generated `package.json` and imports.
 

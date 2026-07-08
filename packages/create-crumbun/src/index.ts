@@ -5,7 +5,8 @@ import { basename, dirname, join, resolve } from "node:path";
 
 const target = resolve(Bun.argv[2] ?? "app");
 const appName = packageName(basename(target));
-const crumbunDependency = "^0.1.0";
+const ownPackage = await Bun.file(new URL("../package.json", import.meta.url)).json() as { version: string };
+const crumbunDependency = `^${ownPackage.version}`;
 
 if (await isNonEmptyDir(target)) {
   console.error(`Refusing to overwrite non-empty directory: ${target}`);
@@ -52,6 +53,75 @@ function files(name: string) {
       null,
       2,
     )}\n`,
+    "AGENTS.md": `# Agent Instructions
+
+This is a crumbun app. crumbun is a tiny Bun fullstack engine with file routes and Pug templates.
+
+## Create A New App
+
+Use this command when starting another crumbun app:
+
+    bunx create-crumbun my-app
+
+Then:
+
+    cd my-app
+    bun install
+    bun run dev
+
+## Use Bun
+
+- Use bun, not node.
+- Use bun install for dependencies.
+- Use bun run dev during local development.
+- Use Bun.serve through crumbun; do not add Express.
+- Do not add Vite, webpack, Jest, Vitest, or dotenv unless explicitly needed.
+
+## App Shape
+
+- public/ contains static files served from /.
+- src/server.ts starts crumbun.
+- src/api/**/page.ts creates routes.
+- src/views/**/*.pug contains Pug views.
+- src/views/**/*.css is served from /_crumbun.
+- src/utils/ is for local app helpers and data.
+
+## Routing
+
+- A folder in brackets becomes a route param.
+- src/api/story/[id]/page.ts handles /story/:id.
+- Page files export HTTP handlers such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD.
+- A default export can be used as the fallback handler.
+
+Handler context:
+
+- request: incoming Request.
+- url: parsed URL.
+- params: route params from bracket folders.
+- render(view, locals, init): renders src/views/<view>.pug.
+- json(value, init): returns JSON with the right content type.
+
+Return values:
+
+- Response for full control.
+- string for HTML.
+- object for JSON.
+- null or undefined for 204.
+
+## Views
+
+- render("story/story") renders src/views/story/story.pug.
+- Link global CSS with /_crumbun/style.css.
+- Link nested view CSS with /_crumbun/story/story.css.
+- Keep layout markup in src/views/layout/layout.pug.
+
+## Working Here
+
+- Read the existing route and view before editing.
+- Prefer small changes that keep the file-route convention obvious.
+- Add shared app logic under src/utils instead of hiding it in views.
+- Verify route changes by running bun run dev and opening the changed route.
+`,
     "public/favicon.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#111827"/><path fill="#f59e0b" d="M16 17h32v8H26v7h18v8H26v15H16z"/></svg>\n`,
     "src/server.ts": `import { fileURLToPath } from "node:url";
 import { serve } from "crumbun";

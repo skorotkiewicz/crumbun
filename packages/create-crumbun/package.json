@@ -1,6 +1,6 @@
 {
   "name": "create-crumbun",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create a tiny Bun fullstack app using crumbun and Pug.",
   "type": "module",
   "bin": {
