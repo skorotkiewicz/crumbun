@@ -184,6 +184,12 @@ export function getStory(id: string) {
   return stories.find((story) => story.id === id);
 }
 `,
+    "src/api/go/page.ts": `import type { PageContext } from "crumbun";
+
+export function GET({ redirect }: PageContext) {
+  return redirect("/story/first-light");
+}
+`,
     "src/views/index.pug": `section.panel.active
   h2 Start
   p.hint This page is rendered from src/views/index.pug. Story pages are handled by src/api/story/[id]/page.ts.
@@ -223,6 +229,10 @@ section.panel.active
       span.rank GET
       span.lbl /story/quiet-console
       code Quiet Console
+    a.row.link-row(href="/go")
+      span.rank GET
+      span.lbl /go
+      code redirect → /story/first-light
 `,
     "src/views/style.scss": `:root {
   --bg: #0c0c0e;
@@ -450,6 +460,26 @@ pre {
     white-space: normal;
   }
 }
+`,
+    "src/views/_error.pug": `doctype html
+html(lang="en")
+  head
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    title= status + " · Crumbun"
+    link(rel="icon" href="/favicon.svg")
+    link(rel="stylesheet" href="/_crumbun/style.css")
+    link(rel="stylesheet" href="/_crumbun/_layout.css")
+  body
+    header.shell-head
+      h1 crumbun
+      p tiny Bun app · file routes · Pug views
+    main.shell
+      //- status and message are provided by crumbun; this view renders standalone (no _layout.pug wrap)
+      section.panel
+        h2= status
+        p.hint= message
+        a(href="/") Back to start
 `,
     "src/views/story/story.pug": `//- story.scss next to this file is auto-linked by crumbun
 article.panel.story
