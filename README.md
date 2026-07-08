@@ -1,13 +1,12 @@
-# fstug
+# crumbun
 
 A tiny Bun fullstack engine with file routes and Pug templates.
 
 ## Layout
 
 ```txt
-packages/fstug          engine
-packages/create-fstug   scaffold CLI
-app                     example app
+packages/crumbun          engine
+packages/create-crumbun   scaffold CLI
 ```
 
 ## Install
@@ -16,16 +15,16 @@ app                     example app
 bun install
 ```
 
-## Run the example
-
-```bash
-bun run dev
-```
-
 ## Create an app
 
 ```bash
 bun run create my-app
+```
+
+Or:
+
+```bash
+bunx create-crumbun my-app
 ```
 
 The engine maps `src/api/**/page.ts` to routes. A folder named `[id]` becomes a URL param, so `src/api/story/[id]/page.ts` handles `/story/:id`.
